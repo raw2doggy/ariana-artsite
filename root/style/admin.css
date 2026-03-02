@@ -1,0 +1,243 @@
+/* ===== Admin Dashboard Styles ===== */
+
+.admin-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 10px 30px 0;
+}
+
+.admin-header .page-title {
+    margin: 20px 0 10px;
+}
+
+#logout-btn {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.admin-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+}
+
+/* Sections */
+.admin-section {
+    margin-bottom: 35px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 20px;
+    background: #fafafa;
+}
+
+.admin-section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #ddd;
+    color: #222;
+}
+
+/* Fields */
+.admin-field {
+    margin-bottom: 14px;
+}
+
+.admin-field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #444;
+}
+
+.admin-field input,
+.admin-field textarea {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+}
+
+.admin-field input:focus,
+.admin-field textarea:focus {
+    outline: none;
+    border-color: #000;
+}
+
+/* Item editors (shop / portfolio) */
+.admin-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: #fff;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.admin-item .admin-field {
+    flex: 1;
+    min-width: 140px;
+    margin-bottom: 0;
+}
+
+/* Buttons */
+.admin-btn {
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.admin-btn:hover {
+    opacity: 0.85;
+}
+
+.admin-btn-save {
+    background-color: #27ae60;
+    color: #fff;
+    font-size: 1.05rem;
+    padding: 12px 30px;
+}
+
+.admin-btn-reset {
+    background-color: #7f8c8d;
+    color: #fff;
+    padding: 12px 30px;
+}
+
+.admin-btn-add {
+    background-color: #2980b9;
+    color: #fff;
+    margin-top: 8px;
+}
+
+.admin-btn-delete {
+    background-color: #c0392b;
+    color: #fff;
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.admin-btn-thumb-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(192, 57, 43, 0.9);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.admin-btn-logout {
+    background-color: rgba(40, 5, 5, 0.85);
+    color: #fff;
+}
+
+/* Vertical item layout for shop */
+.admin-item-vertical {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.admin-item-fields {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-item-fields .admin-field {
+    flex: 1;
+    min-width: 140px;
+}
+
+/* Image gallery in admin */
+.admin-image-gallery {
+    margin-top: 8px;
+}
+
+.admin-image-gallery > label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #444;
+}
+
+.admin-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.admin-thumb-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.admin-img-preview {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    display: block;
+}
+
+/* File input styling */
+.admin-upload input[type="file"] {
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+/* Actions row */
+.admin-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+/* Toast notification */
+.admin-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #27ae60;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 6px;
+    font-size: 1rem;
+    z-index: 9999;
+    animation: fadeInOut 2.5s ease forwards;
+}
+
+@keyframes fadeInOut {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    75%  { opacity: 1; }
+    100% { opacity: 0; }
+}

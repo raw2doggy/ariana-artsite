@@ -1,0 +1,108 @@
+/* ===== Shared Styles ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Georgia, 'Times New Roman', serif;
+    min-height: 100vh;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+    background-color: rgba(40, 5, 5, 0.85);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 40px;
+    flex: 1;
+    justify-content: center;
+}
+
+.navbar a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.navbar a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.navbar a.active {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-weight: bold;
+}
+
+.nav-admin {
+    margin-left: auto;
+    font-size: 0.9rem !important;
+    opacity: 0.7;
+}
+
+.nav-admin:hover {
+    opacity: 1;
+}
+
+/* ===== Common Page Title ===== */
+.page-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 30px 0 10px;
+    color: #000;
+}
+
+.page-divider {
+    border: none;
+    border-top: 3px solid #000;
+    width: 80%;
+    margin: 0 auto 30px;
+}
+
+/* ===== Footer ===== */
+.site-footer {
+    background-color: rgba(40, 5, 5, 0.85);
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    padding: 30px 20px 20px;
+    margin-top: 60px;
+    font-size: 0.95rem;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 16px;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: #fff;
+}
+
+.footer-copy {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
