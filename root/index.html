@@ -5,9 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ariana's Art Site</title>
     <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/index.css">
 </head>
 <body>
-    <h1>Welcome to Ariana's Art Site</h1>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="index.html" class="active">Home</a>
+            <a href="pages/portfolio.html">Portfolio</a>
+            <a href="pages/shop.html">Shop</a>
+            <a href="pages/about.html">About</a>
+        </div>
+        <a href="pages/login.html" class="nav-admin">Admin</a>
+    </nav>
+
+    <h1 class="site-title">Ariana's Art Site</h1>
+    <hr class="title-divider">
+
+    <section class="welcome">
+        <p class="welcome-text">
+            Welcome! Explore original artwork by Ariana. Browse the portfolio
+            to see the full collection, or check out the shop to bring a piece home.
+        </p>
+    </section>
+
+    <section class="preview">
+        <h2 class="preview-heading">Newest Items</h2>
+        <div class="preview-items">
+            <!-- Dynamically populated by main.js -->
+        </div>
+        <a href="pages/shop.html" class="shop-link">View all items in the Shop &rarr;</a>
+    </section>
+
+    <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

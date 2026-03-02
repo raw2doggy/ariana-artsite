@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Ariana's Art Site</title>
+    <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="../style/admin.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="shop.html">Shop</a>
+            <a href="about.html">About</a>
+        </div>
+        <a href="login.html" class="nav-admin active">Admin</a>
+    </nav>
+
+    <div class="admin-header">
+        <h1 class="page-title">Admin Dashboard</h1>
+        <button id="logout-btn" class="admin-btn admin-btn-logout">Log Out</button>
+    </div>
+    <hr class="page-divider">
+
+    <div id="admin-content" class="admin-container"></div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+    <script>
+        (() => {
+            "use strict";
+
+            // Guard: must be logged in
+            if (!Auth.isLoggedIn()) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            // Render the editable dashboard
+            Admin.renderDashboard();
+
+            // Logout
+            document.getElementById("logout-btn").addEventListener("click", () => {
+                Auth.logout();
+                window.location.href = "login.html";
+            });
+        })();
+    </script>
+</body>
+</html>
