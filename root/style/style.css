@@ -73,3 +73,36 @@ body {
     width: 80%;
     margin: 0 auto 30px;
 }
+
+/* ===== Footer ===== */
+.site-footer {
+    background-color: rgba(40, 5, 5, 0.85);
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    padding: 30px 20px 20px;
+    margin-top: 60px;
+    font-size: 0.95rem;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 16px;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: #fff;
+}
+
+.footer-copy {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}

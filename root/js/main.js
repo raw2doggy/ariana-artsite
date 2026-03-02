@@ -28,12 +28,12 @@ const SiteContent = (() => {
             { name: "Art Piece 2", price: "$75", images: [] }
         ],
         portfolioItems: [
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" }
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] }
         ]
     };
 
@@ -85,15 +85,41 @@ const SiteContent = (() => {
             const card = document.createElement("div");
             card.className = "preview-card";
 
-            const firstImg = (item.images && item.images.length > 0) ? item.images[0] : "";
-            const src = resolveImg(firstImg, "");
+            const images = (item.images && item.images.length > 0) ? item.images : [];
+            const hasMultiple = images.length > 1;
+
+            let slideshowHTML = "";
+            if (images.length === 0) {
+                slideshowHTML = `<div class="slideshow"><div class="slide-placeholder"></div></div>`;
+            } else {
+                const slides = images.map((src, i) =>
+                    `<img class="slide ${i === 0 ? "slide-active" : ""}"
+                          src="${src}" alt="${_esc(item.name)} image ${i + 1}"
+                          onerror="this.style.display='none'">`
+                ).join("");
+
+                slideshowHTML = `
+                    <div class="slideshow" data-index="0">
+                        ${slides}
+                        ${hasMultiple ? `
+                            <button class="slide-arrow slide-prev" data-dir="-1">&#10094;</button>
+                            <button class="slide-arrow slide-next" data-dir="1">&#10095;</button>
+                            <div class="slide-dots">
+                                ${images.map((_, i) =>
+                                    `<span class="dot ${i === 0 ? "dot-active" : ""}" data-slide="${i}"></span>`
+                                ).join("")}
+                            </div>
+                        ` : ""}
+                    </div>`;
+            }
 
             card.innerHTML = `
-                <img src="${src}" alt="${_esc(item.name)}"
-                     onerror="this.style.display='none'">
+                ${slideshowHTML}
                 <div class="preview-info">${_esc(item.price)} — ${_esc(item.name)}</div>`;
             container.appendChild(card);
         });
+
+        _initSlideshows(container);
     }
 
     function renderAbout() {
@@ -127,13 +153,41 @@ const SiteContent = (() => {
             const div = document.createElement("div");
             div.className = "gallery-item";
 
-            const src = resolveImg(item.image, "");
+            const images = (item.images && item.images.length > 0) ? item.images : [];
+            const hasMultiple = images.length > 1;
+
+            let slideshowHTML = "";
+            if (images.length === 0) {
+                slideshowHTML = `<div class="slideshow"><div class="slide-placeholder"></div></div>`;
+            } else {
+                const slides = images.map((src, i) =>
+                    `<img class="slide ${i === 0 ? "slide-active" : ""}"
+                          src="${src}" alt="${_esc(item.title)} image ${i + 1}"
+                          onerror="this.style.display='none'">`
+                ).join("");
+
+                slideshowHTML = `
+                    <div class="slideshow" data-index="0">
+                        ${slides}
+                        ${hasMultiple ? `
+                            <button class="slide-arrow slide-prev" data-dir="-1">&#10094;</button>
+                            <button class="slide-arrow slide-next" data-dir="1">&#10095;</button>
+                            <div class="slide-dots">
+                                ${images.map((_, i) =>
+                                    `<span class="dot ${i === 0 ? "dot-active" : ""}" data-slide="${i}"></span>`
+                                ).join("")}
+                            </div>
+                        ` : ""}
+                    </div>`;
+            }
+
             div.innerHTML = `
-                <img src="${src}" alt="${_esc(item.title)}"
-                     onerror="this.style.display='none'">
+                ${slideshowHTML}
                 <p class="gallery-caption">${_esc(item.title)}</p>`;
             container.appendChild(div);
         });
+
+        _initSlideshows(container);
     }
 
     function renderShop() {

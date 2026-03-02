@@ -28,12 +28,12 @@ const Admin = (() => {
             { name: "Art Piece 2", price: "$75",  images: [] }
         ],
         portfolioItems: [
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" },
-            { title: "Piece Title", image: "" }
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] },
+            { title: "Piece Title", images: [] }
         ]
     };
 
@@ -215,7 +215,7 @@ const Admin = (() => {
         addPortBtn.textContent = "+ Add Portfolio Item";
         addPortBtn.addEventListener("click", () => {
             _collectFormValues(data);
-            data.portfolioItems.push({ title: "New Piece", image: "" });
+            data.portfolioItems.push({ title: "New Piece", images: [] });
             save(data);
             renderDashboard();
         });
@@ -367,38 +367,72 @@ const Admin = (() => {
         return wrap;
     }
 
-    // ── Portfolio Item Editor (single image upload) ─────────
+// ── Portfolio Item Editor (multi-image) ────────────────
 
     function _portfolioItemEditor(data, index, item) {
         const wrap = document.createElement("div");
-        wrap.className = "admin-item";
+        wrap.className = "admin-item admin-item-vertical";
 
         // Title field
-        const titleField = document.createElement("div");
-        titleField.className = "admin-field";
-        titleField.innerHTML = `
-            <label>Title</label>
-            <input type="text" data-type="portfolio" data-index="${index}" data-prop="title"
-                   value="${Auth.sanitize(item.title || "")}">`;
-        wrap.appendChild(titleField);
+        const fields = document.createElement("div");
+        fields.className = "admin-item-fields";
+        fields.innerHTML = `
+            <div class="admin-field">
+                <label>Title</label>
+                <input type="text" data-type="portfolio" data-index="${index}" data-prop="title"
+                       value="${Auth.sanitize(item.title || "")}">
+            </div>`;
+        wrap.appendChild(fields);
 
-        // Current image preview
-        if (item.image) {
-            wrap.appendChild(_imagePreview(item.image));
+        // Image gallery
+        const gallery = document.createElement("div");
+        gallery.className = "admin-image-gallery";
+        const galLabel = document.createElement("label");
+        galLabel.textContent = "Images (" + (item.images ? item.images.length : 0) + ")";
+        gallery.appendChild(galLabel);
+
+        const thumbs = document.createElement("div");
+        thumbs.className = "admin-thumbs";
+        if (item.images && item.images.length > 0) {
+            item.images.forEach((src, imgIdx) => {
+                const thumbWrap = document.createElement("div");
+                thumbWrap.className = "admin-thumb-wrap";
+                const thumb = document.createElement("img");
+                thumb.className = "admin-img-preview";
+                thumb.src = src;
+                thumb.alt = "Image " + (imgIdx + 1);
+                const removeBtn = document.createElement("button");
+                removeBtn.className = "admin-btn admin-btn-thumb-remove";
+                removeBtn.textContent = "\u00D7";
+                removeBtn.title = "Remove image";
+                removeBtn.addEventListener("click", () => {
+                    _collectFormValues(data);
+                    data.portfolioItems[index].images.splice(imgIdx, 1);
+                    save(data);
+                    renderDashboard();
+                });
+                thumbWrap.appendChild(thumb);
+                thumbWrap.appendChild(removeBtn);
+                thumbs.appendChild(thumbWrap);
+            });
         }
+        gallery.appendChild(thumbs);
 
-        // Upload button
-        wrap.appendChild(_createUploadBtn("Upload Image", (url) => {
+        // Upload button for adding images
+        const uploadBtn = _createUploadBtn("Add Image", (url) => {
             _collectFormValues(data);
-            data.portfolioItems[index].image = url;
+            if (!data.portfolioItems[index].images) data.portfolioItems[index].images = [];
+            data.portfolioItems[index].images.push(url);
             save(data);
             renderDashboard();
-        }));
+        });
+        gallery.appendChild(uploadBtn);
+        wrap.appendChild(gallery);
 
         // Delete button
         const delBtn = document.createElement("button");
         delBtn.className = "admin-btn admin-btn-delete";
-        delBtn.textContent = "Remove";
+        delBtn.textContent = "Remove Item";
         delBtn.addEventListener("click", () => {
             _collectFormValues(data);
             data.portfolioItems.splice(index, 1);
