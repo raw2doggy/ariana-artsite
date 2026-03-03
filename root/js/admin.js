@@ -1,102 +1,63 @@
 /**
  * admin.js — Admin Panel Content Management
  *
- * Stores editable site content in localStorage.
- * Supports image uploads (base64 data-URLs) and multi-image shop listings.
- * All user input is sanitized before storage and rendering.
+ * Manages site content through the server REST API.
+ * Supports image uploads (stored as files on disk) and
+ * multi-image shop / portfolio listings.
  */
 
 const Admin = (() => {
     "use strict";
 
-    const STORAGE_KEY = "artsite_content";
+    // ── API Helpers ─────────────────────────────────────────
 
-    // ── Default Content ─────────────────────────────────────
-    const DEFAULTS = {
-        siteTitle: "Ariana's Art Site",
-        welcomeText:
-            "Welcome! Explore original artwork by Ariana. Browse the portfolio to see the full collection, or check out the shop to bring a piece home.",
-        aboutTitle: "About the Artist",
-        aboutName: "Ariana",
-        aboutBio1:
-            "Welcome to my art site! I'm a passionate artist who loves creating pieces that capture emotion and tell stories. Browse my portfolio to see my work, or visit the shop to purchase original pieces.",
-        aboutBio2:
-            "Feel free to reach out if you have any questions or would like to commission a custom piece.",
-        aboutImage: "",
-        shopItems: [
-            { name: "Art Piece 1", price: "$50",  images: [] },
-            { name: "Art Piece 2", price: "$75",  images: [] }
-        ],
-        portfolioItems: [
-            { title: "Piece Title", images: [] },
-            { title: "Piece Title", images: [] },
-            { title: "Piece Title", images: [] },
-            { title: "Piece Title", images: [] },
-            { title: "Piece Title", images: [] },
-            { title: "Piece Title", images: [] }
-        ]
-    };
-
-    // ── Storage Helpers ─────────────────────────────────────
-    function load() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return JSON.parse(JSON.stringify(DEFAULTS));
-        try {
-            return JSON.parse(raw);
-        } catch {
-            return JSON.parse(JSON.stringify(DEFAULTS));
-        }
-    }
-
-    function save(data) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-
-    function resetToDefaults() {
-        localStorage.removeItem(STORAGE_KEY);
-    }
-
-    // ── Sanitized Getters ───────────────────────────────────
-    function get(key) {
-        const data = load();
-        const val = data[key] !== undefined ? data[key] : DEFAULTS[key];
-        if (typeof val === "string") return Auth.sanitize(val);
-        return val;
-    }
-
-    function getRaw(key) {
-        const data = load();
-        return data[key] !== undefined ? data[key] : DEFAULTS[key];
-    }
-
-    function set(key, value) {
-        const data = load();
-        if (typeof value === "string") {
-            const check = Auth.validateInput(value);
-            if (!check.valid) return { success: false, message: check.reason };
-            data[key] = value;
-        } else {
-            data[key] = value;
-        }
-        save(data);
-        return { success: true };
-    }
-
-    // ── Image Upload Helper ─────────────────────────────────
-    function _readFileAsDataURL(file) {
-        return new Promise((resolve, reject) => {
-            if (!file.type.startsWith("image/")) {
-                reject(new Error("Not an image file"));
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload  = () => resolve(reader.result);
-            reader.onerror = () => reject(reader.error);
-            reader.readAsDataURL(file);
+    async function apiFetch(url, options = {}) {
+        const isForm = options.body instanceof FormData;
+        const res = await fetch(url, {
+            ...options,
+            headers: {
+                ...(isForm ? {} : { "Content-Type": "application/json" }),
+                ...options.headers
+            },
+            body: isForm
+                ? options.body
+                : options.body
+                    ? JSON.stringify(options.body)
+                    : undefined
         });
+
+        if (res.status === 401) {
+            sessionStorage.removeItem("admin_logged_in");
+            window.location.href = "login.html";
+            throw new Error("Unauthorized");
+        }
+
+        return res.json();
     }
 
-    function _createUploadBtn(labelText, onUpload) {
+    async function fetchAllData() {
+        const [content, shopItems, portfolioItems] = await Promise.all([
+            apiFetch("/api/content"),
+            apiFetch("/api/shop"),
+            apiFetch("/api/portfolio")
+        ]);
+        return { ...content, shopItems, portfolioItems };
+    }
+
+    // ── Price Helpers ───────────────────────────────────────
+
+    function centsToDisplay(cents) {
+        return (cents / 100).toFixed(2);
+    }
+
+    function displayToCents(str) {
+        const cleaned = String(str).replace(/[^0-9.]/g, "");
+        return Math.round(parseFloat(cleaned) * 100) || 0;
+    }
+
+    // ── Image Upload Button ─────────────────────────────────
+
+    function _createUploadBtn(labelText, uploadUrl) {
         const wrap = document.createElement("div");
         wrap.className = "admin-field admin-upload";
 
@@ -104,15 +65,17 @@ const Admin = (() => {
         lbl.textContent = labelText;
 
         const input = document.createElement("input");
-        input.type = "file";
+        input.type   = "file";
         input.accept = "image/*";
         input.addEventListener("change", async () => {
             if (input.files && input.files[0]) {
                 try {
-                    const dataUrl = await _readFileAsDataURL(input.files[0]);
-                    onUpload(dataUrl);
+                    const fd = new FormData();
+                    fd.append("image", input.files[0]);
+                    await fetch(uploadUrl, { method: "POST", body: fd });
+                    renderDashboard(); // refresh
                 } catch (e) {
-                    alert("Could not read image: " + e.message);
+                    alert("Could not upload image: " + e.message);
                 }
             }
         });
@@ -130,123 +93,133 @@ const Admin = (() => {
         return img;
     }
 
-    // ── Collect unsaved form values from DOM ────────────────
-    function _collectFormValues(data) {
-        const container = document.getElementById("admin-content");
-        if (!container) return;
+    // ── Collect form values from the DOM ────────────────────
 
-        // Text fields (siteTitle, welcomeText, etc.)
+    function _collectContentFields(container) {
+        const content = {};
         container.querySelectorAll("input[data-key], textarea[data-key]").forEach(el => {
-            const v = Auth.validateInput(el.value);
-            if (v.valid) data[el.dataset.key] = el.value;
+            content[el.dataset.key] = el.value;
         });
-
-        // Array item text fields (shop name/price, portfolio title)
-        container.querySelectorAll("input[data-type]").forEach(el => {
-            const arr =
-                el.dataset.type === "shop" ? data.shopItems : data.portfolioItems;
-            const idx = parseInt(el.dataset.index, 10);
-            if (arr[idx]) {
-                const v = Auth.validateInput(el.value);
-                if (v.valid) arr[idx][el.dataset.prop] = el.value;
-            }
-        });
+        return content;
     }
 
-    // ── Admin Dashboard Rendering ──────────────────────────
-    function renderDashboard() {
+    function _collectShopFields(container) {
+        const items = {};
+        container.querySelectorAll("input[data-type='shop']").forEach(el => {
+            const id = el.dataset.id;
+            if (!items[id]) items[id] = {};
+            if (el.dataset.prop === "price") {
+                items[id].price_cents = displayToCents(el.value);
+            } else {
+                items[id][el.dataset.prop] = el.value;
+            }
+        });
+        return items;
+    }
+
+    function _collectPortfolioFields(container) {
+        const items = {};
+        container.querySelectorAll("input[data-type='portfolio']").forEach(el => {
+            const id = el.dataset.id;
+            if (!items[id]) items[id] = {};
+            items[id][el.dataset.prop] = el.value;
+        });
+        return items;
+    }
+
+    // ── Dashboard Renderer ──────────────────────────────────
+
+    async function renderDashboard() {
         if (!Auth.isLoggedIn()) {
             window.location.href = "login.html";
             return;
         }
 
-        const data = load();
+        let data;
+        try {
+            data = await fetchAllData();
+        } catch (e) {
+            if (e.message === "Unauthorized") return;
+            console.error("Failed to load data:", e);
+            return;
+        }
+
         const container = document.getElementById("admin-content");
         if (!container) return;
         container.innerHTML = "";
 
-        // ── Text Content Section ────
+        // ── Text Content ────────────────────────────────────
         const textSection = _section("Text Content");
-        textSection.appendChild(_field("Site Title", "siteTitle", data.siteTitle));
-        textSection.appendChild(_textarea("Welcome Text", "welcomeText", data.welcomeText));
-        textSection.appendChild(_field("About Page Title", "aboutTitle", data.aboutTitle));
-        textSection.appendChild(_field("Artist Name", "aboutName", data.aboutName));
-        textSection.appendChild(_textarea("About Bio Paragraph 1", "aboutBio1", data.aboutBio1));
-        textSection.appendChild(_textarea("About Bio Paragraph 2", "aboutBio2", data.aboutBio2));
+        textSection.appendChild(_field("Site Title",            "siteTitle",   data.siteTitle   || ""));
+        textSection.appendChild(_textarea("Welcome Text",       "welcomeText", data.welcomeText || ""));
+        textSection.appendChild(_field("About Page Title",      "aboutTitle",  data.aboutTitle  || ""));
+        textSection.appendChild(_field("Artist Name",           "aboutName",   data.aboutName   || ""));
+        textSection.appendChild(_textarea("About Bio Paragraph 1", "aboutBio1", data.aboutBio1 || ""));
+        textSection.appendChild(_textarea("About Bio Paragraph 2", "aboutBio2", data.aboutBio2 || ""));
 
-        // About photo upload
+        // About photo
         const aboutPhotoWrap = document.createElement("div");
         aboutPhotoWrap.className = "admin-field";
         if (data.aboutImage) aboutPhotoWrap.appendChild(_imagePreview(data.aboutImage));
-        aboutPhotoWrap.appendChild(_createUploadBtn("About Page Photo", (url) => {
-            _collectFormValues(data);
-            data.aboutImage = url;
-            save(data);
-            renderDashboard();
-        }));
+        aboutPhotoWrap.appendChild(
+            _createUploadBtn("About Page Photo", "/api/content/about-image")
+        );
         textSection.appendChild(aboutPhotoWrap);
 
         container.appendChild(textSection);
 
-        // ── Shop Items Section ──────
+        // ── Shop Items ──────────────────────────────────────
         const shopSection = _section("Shop Items");
-        (data.shopItems || []).forEach((item, i) => {
-            shopSection.appendChild(_shopItemEditor(data, i, item));
+        (data.shopItems || []).forEach(item => {
+            shopSection.appendChild(_shopItemEditor(item));
         });
+
         const addShopBtn = document.createElement("button");
-        addShopBtn.className = "admin-btn admin-btn-add";
+        addShopBtn.className   = "admin-btn admin-btn-add";
         addShopBtn.textContent = "+ Add Shop Item";
-        addShopBtn.addEventListener("click", () => {
-            _collectFormValues(data);
-            data.shopItems.push({ name: "New Item", price: "$0", images: [] });
-            save(data);
+        addShopBtn.addEventListener("click", async () => {
+            await apiFetch("/api/shop", {
+                method: "POST",
+                body:   { name: "New Item", price_cents: 0 }
+            });
             renderDashboard();
         });
         shopSection.appendChild(addShopBtn);
         container.appendChild(shopSection);
 
-        // ── Portfolio Items Section ─
+        // ── Portfolio Items ─────────────────────────────────
         const portSection = _section("Portfolio Items");
-        (data.portfolioItems || []).forEach((item, i) => {
-            portSection.appendChild(_portfolioItemEditor(data, i, item));
+        (data.portfolioItems || []).forEach(item => {
+            portSection.appendChild(_portfolioItemEditor(item));
         });
+
         const addPortBtn = document.createElement("button");
-        addPortBtn.className = "admin-btn admin-btn-add";
+        addPortBtn.className   = "admin-btn admin-btn-add";
         addPortBtn.textContent = "+ Add Portfolio Item";
-        addPortBtn.addEventListener("click", () => {
-            _collectFormValues(data);
-            data.portfolioItems.push({ title: "New Piece", images: [] });
-            save(data);
+        addPortBtn.addEventListener("click", async () => {
+            await apiFetch("/api/portfolio", {
+                method: "POST",
+                body:   { title: "New Piece" }
+            });
             renderDashboard();
         });
         portSection.appendChild(addPortBtn);
         container.appendChild(portSection);
 
-        // ── Save / Reset ────────────
+        // ── Actions ─────────────────────────────────────────
         const actions = document.createElement("div");
         actions.className = "admin-actions";
 
         const saveBtn = document.createElement("button");
-        saveBtn.className = "admin-btn admin-btn-save";
+        saveBtn.className   = "admin-btn admin-btn-save";
         saveBtn.textContent = "Save All Changes";
-        saveBtn.addEventListener("click", () => _saveAll(container, data));
-
-        const resetBtn = document.createElement("button");
-        resetBtn.className = "admin-btn admin-btn-reset";
-        resetBtn.textContent = "Reset to Defaults";
-        resetBtn.addEventListener("click", () => {
-            if (confirm("Reset all content to defaults? This cannot be undone.")) {
-                resetToDefaults();
-                renderDashboard();
-            }
-        });
+        saveBtn.addEventListener("click", () => _saveAll(container));
 
         actions.appendChild(saveBtn);
-        actions.appendChild(resetBtn);
         container.appendChild(actions);
     }
 
-    // ── Private DOM Helpers ─────────────────────────────────
+    // ── DOM Helpers ─────────────────────────────────────────
 
     function _section(title) {
         const sec = document.createElement("div");
@@ -263,9 +236,9 @@ const Admin = (() => {
         const lbl = document.createElement("label");
         lbl.textContent = label;
         const inp = document.createElement("input");
-        inp.type = "text";
+        inp.type        = "text";
         inp.dataset.key = key;
-        inp.value = value || "";
+        inp.value       = value || "";
         wrap.appendChild(lbl);
         wrap.appendChild(inp);
         return wrap;
@@ -278,88 +251,77 @@ const Admin = (() => {
         lbl.textContent = label;
         const ta = document.createElement("textarea");
         ta.dataset.key = key;
-        ta.rows = 3;
-        ta.value = value || "";
+        ta.rows        = 3;
+        ta.value       = value || "";
         wrap.appendChild(lbl);
         wrap.appendChild(ta);
         return wrap;
     }
 
-    // ── Shop Item Editor (multi-image) ──────────────────────
+    // ── Shop Item Editor ────────────────────────────────────
 
-    function _shopItemEditor(data, index, item) {
+    function _shopItemEditor(item) {
         const wrap = document.createElement("div");
         wrap.className = "admin-item admin-item-vertical";
 
-        // Text fields row
+        // Text fields
         const fields = document.createElement("div");
         fields.className = "admin-item-fields";
         fields.innerHTML = `
             <div class="admin-field">
                 <label>Name</label>
-                <input type="text" data-type="shop" data-index="${index}" data-prop="name"
+                <input type="text" data-type="shop" data-id="${item.id}" data-prop="name"
                        value="${Auth.sanitize(item.name || "")}">
             </div>
             <div class="admin-field">
-                <label>Price</label>
-                <input type="text" data-type="shop" data-index="${index}" data-prop="price"
-                       value="${Auth.sanitize(item.price || "")}">
+                <label>Price ($)</label>
+                <input type="text" data-type="shop" data-id="${item.id}" data-prop="price"
+                       value="${centsToDisplay(item.price_cents || 0)}">
             </div>`;
         wrap.appendChild(fields);
 
         // Image gallery
         const gallery = document.createElement("div");
         gallery.className = "admin-image-gallery";
+        const images = item.images || [];
         const galLabel = document.createElement("label");
-        galLabel.textContent = "Images (" + (item.images ? item.images.length : 0) + ")";
+        galLabel.textContent = "Images (" + images.length + ")";
         gallery.appendChild(galLabel);
 
         const thumbs = document.createElement("div");
         thumbs.className = "admin-thumbs";
-        if (item.images && item.images.length > 0) {
-            item.images.forEach((src, imgIdx) => {
-                const thumbWrap = document.createElement("div");
-                thumbWrap.className = "admin-thumb-wrap";
-                const thumb = document.createElement("img");
-                thumb.className = "admin-img-preview";
-                thumb.src = src;
-                thumb.alt = "Image " + (imgIdx + 1);
-                const removeBtn = document.createElement("button");
-                removeBtn.className = "admin-btn admin-btn-thumb-remove";
-                removeBtn.textContent = "\u00D7";
-                removeBtn.title = "Remove image";
-                removeBtn.addEventListener("click", () => {
-                    _collectFormValues(data);
-                    data.shopItems[index].images.splice(imgIdx, 1);
-                    save(data);
-                    renderDashboard();
-                });
-                thumbWrap.appendChild(thumb);
-                thumbWrap.appendChild(removeBtn);
-                thumbs.appendChild(thumbWrap);
+        images.forEach(img => {
+            const thumbWrap = document.createElement("div");
+            thumbWrap.className = "admin-thumb-wrap";
+            const thumb = document.createElement("img");
+            thumb.className = "admin-img-preview";
+            thumb.src = img.image_path;
+            thumb.alt = "Image";
+            const removeBtn = document.createElement("button");
+            removeBtn.className   = "admin-btn admin-btn-thumb-remove";
+            removeBtn.textContent = "\u00D7";
+            removeBtn.title       = "Remove image";
+            removeBtn.addEventListener("click", async () => {
+                await apiFetch(`/api/shop/images/${img.id}`, { method: "DELETE" });
+                renderDashboard();
             });
-        }
+            thumbWrap.appendChild(thumb);
+            thumbWrap.appendChild(removeBtn);
+            thumbs.appendChild(thumbWrap);
+        });
         gallery.appendChild(thumbs);
 
-        // Upload button for adding images
-        const uploadBtn = _createUploadBtn("Add Image", (url) => {
-            _collectFormValues(data);
-            if (!data.shopItems[index].images) data.shopItems[index].images = [];
-            data.shopItems[index].images.push(url);
-            save(data);
-            renderDashboard();
-        });
-        gallery.appendChild(uploadBtn);
+        gallery.appendChild(
+            _createUploadBtn("Add Image", `/api/shop/${item.id}/images`)
+        );
         wrap.appendChild(gallery);
 
-        // Delete item button
+        // Delete item
         const delBtn = document.createElement("button");
-        delBtn.className = "admin-btn admin-btn-delete";
+        delBtn.className   = "admin-btn admin-btn-delete";
         delBtn.textContent = "Remove Item";
-        delBtn.addEventListener("click", () => {
-            _collectFormValues(data);
-            data.shopItems.splice(index, 1);
-            save(data);
+        delBtn.addEventListener("click", async () => {
+            await apiFetch(`/api/shop/${item.id}`, { method: "DELETE" });
             renderDashboard();
         });
         wrap.appendChild(delBtn);
@@ -367,19 +329,18 @@ const Admin = (() => {
         return wrap;
     }
 
-// ── Portfolio Item Editor (multi-image) ────────────────
+    // ── Portfolio Item Editor ───────────────────────────────
 
-    function _portfolioItemEditor(data, index, item) {
+    function _portfolioItemEditor(item) {
         const wrap = document.createElement("div");
         wrap.className = "admin-item admin-item-vertical";
 
-        // Title field
         const fields = document.createElement("div");
         fields.className = "admin-item-fields";
         fields.innerHTML = `
             <div class="admin-field">
                 <label>Title</label>
-                <input type="text" data-type="portfolio" data-index="${index}" data-prop="title"
+                <input type="text" data-type="portfolio" data-id="${item.id}" data-prop="title"
                        value="${Auth.sanitize(item.title || "")}">
             </div>`;
         wrap.appendChild(fields);
@@ -387,56 +348,45 @@ const Admin = (() => {
         // Image gallery
         const gallery = document.createElement("div");
         gallery.className = "admin-image-gallery";
+        const images = item.images || [];
         const galLabel = document.createElement("label");
-        galLabel.textContent = "Images (" + (item.images ? item.images.length : 0) + ")";
+        galLabel.textContent = "Images (" + images.length + ")";
         gallery.appendChild(galLabel);
 
         const thumbs = document.createElement("div");
         thumbs.className = "admin-thumbs";
-        if (item.images && item.images.length > 0) {
-            item.images.forEach((src, imgIdx) => {
-                const thumbWrap = document.createElement("div");
-                thumbWrap.className = "admin-thumb-wrap";
-                const thumb = document.createElement("img");
-                thumb.className = "admin-img-preview";
-                thumb.src = src;
-                thumb.alt = "Image " + (imgIdx + 1);
-                const removeBtn = document.createElement("button");
-                removeBtn.className = "admin-btn admin-btn-thumb-remove";
-                removeBtn.textContent = "\u00D7";
-                removeBtn.title = "Remove image";
-                removeBtn.addEventListener("click", () => {
-                    _collectFormValues(data);
-                    data.portfolioItems[index].images.splice(imgIdx, 1);
-                    save(data);
-                    renderDashboard();
-                });
-                thumbWrap.appendChild(thumb);
-                thumbWrap.appendChild(removeBtn);
-                thumbs.appendChild(thumbWrap);
+        images.forEach(img => {
+            const thumbWrap = document.createElement("div");
+            thumbWrap.className = "admin-thumb-wrap";
+            const thumb = document.createElement("img");
+            thumb.className = "admin-img-preview";
+            thumb.src = img.image_path;
+            thumb.alt = "Image";
+            const removeBtn = document.createElement("button");
+            removeBtn.className   = "admin-btn admin-btn-thumb-remove";
+            removeBtn.textContent = "\u00D7";
+            removeBtn.title       = "Remove image";
+            removeBtn.addEventListener("click", async () => {
+                await apiFetch(`/api/portfolio/images/${img.id}`, { method: "DELETE" });
+                renderDashboard();
             });
-        }
+            thumbWrap.appendChild(thumb);
+            thumbWrap.appendChild(removeBtn);
+            thumbs.appendChild(thumbWrap);
+        });
         gallery.appendChild(thumbs);
 
-        // Upload button for adding images
-        const uploadBtn = _createUploadBtn("Add Image", (url) => {
-            _collectFormValues(data);
-            if (!data.portfolioItems[index].images) data.portfolioItems[index].images = [];
-            data.portfolioItems[index].images.push(url);
-            save(data);
-            renderDashboard();
-        });
-        gallery.appendChild(uploadBtn);
+        gallery.appendChild(
+            _createUploadBtn("Add Image", `/api/portfolio/${item.id}/images`)
+        );
         wrap.appendChild(gallery);
 
-        // Delete button
+        // Delete item
         const delBtn = document.createElement("button");
-        delBtn.className = "admin-btn admin-btn-delete";
+        delBtn.className   = "admin-btn admin-btn-delete";
         delBtn.textContent = "Remove Item";
-        delBtn.addEventListener("click", () => {
-            _collectFormValues(data);
-            data.portfolioItems.splice(index, 1);
-            save(data);
+        delBtn.addEventListener("click", async () => {
+            await apiFetch(`/api/portfolio/${item.id}`, { method: "DELETE" });
             renderDashboard();
         });
         wrap.appendChild(delBtn);
@@ -446,27 +396,37 @@ const Admin = (() => {
 
     // ── Save All ────────────────────────────────────────────
 
-    function _saveAll(container, data) {
-        _collectFormValues(data);
+    async function _saveAll(container) {
+        try {
+            // 1. Text content
+            const content = _collectContentFields(container);
+            await apiFetch("/api/content", { method: "PUT", body: content });
 
-        save(data);
+            // 2. Shop items (name / price)
+            const shopFields = _collectShopFields(container);
+            for (const [id, fields] of Object.entries(shopFields)) {
+                await apiFetch(`/api/shop/${id}`, { method: "PUT", body: fields });
+            }
 
-        const msg = document.createElement("div");
-        msg.className = "admin-toast";
-        msg.textContent = "Changes saved!";
-        document.body.appendChild(msg);
-        setTimeout(() => msg.remove(), 2500);
+            // 3. Portfolio items (title)
+            const portfolioFields = _collectPortfolioFields(container);
+            for (const [id, fields] of Object.entries(portfolioFields)) {
+                await apiFetch(`/api/portfolio/${id}`, { method: "PUT", body: fields });
+            }
+
+            // Toast
+            const msg = document.createElement("div");
+            msg.className   = "admin-toast";
+            msg.textContent = "Changes saved!";
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 2500);
+        } catch (e) {
+            if (e.message !== "Unauthorized") {
+                alert("Error saving changes: " + e.message);
+            }
+        }
     }
 
     // ── Public API ──────────────────────────────────────────
-    return {
-        load,
-        save,
-        get,
-        getRaw,
-        set,
-        resetToDefaults,
-        renderDashboard,
-        DEFAULTS
-    };
+    return { renderDashboard };
 })();

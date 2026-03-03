@@ -72,6 +72,7 @@
                     return;
                 }
 
+                // Auth.login() now calls the server API
                 const result = await Auth.login(username, password);
                 if (result.success) {
                     window.location.href = "admin.html";
