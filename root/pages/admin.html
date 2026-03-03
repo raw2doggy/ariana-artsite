@@ -42,18 +42,18 @@
         (() => {
             "use strict";
 
-            // Guard: must be logged in
+            // Quick redirect if not logged in
             if (!Auth.isLoggedIn()) {
                 window.location.href = "login.html";
                 return;
             }
 
-            // Render the editable dashboard
+            // Render the editable dashboard (async — fetches from API)
             Admin.renderDashboard();
 
-            // Logout
-            document.getElementById("logout-btn").addEventListener("click", () => {
-                Auth.logout();
+            // Logout (async — calls server)
+            document.getElementById("logout-btn").addEventListener("click", async () => {
+                await Auth.logout();
                 window.location.href = "login.html";
             });
         })();

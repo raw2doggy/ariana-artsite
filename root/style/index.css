@@ -67,8 +67,16 @@
     background-color: rgba(60, 10, 10, 0.75);
     color: #fff;
     text-align: center;
-    padding: 10px 0;
+    padding: 10px 8px;
     font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-info span {
+    flex: 1;
 }
 
 /* Shop link */
@@ -86,4 +94,49 @@
 .shop-link:hover {
     background-color: #000;
     color: #fff;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+    .site-title {
+        font-size: 2rem;
+    }
+
+    .welcome-text {
+        font-size: 1rem;
+    }
+
+    .preview-heading {
+        font-size: 1.4rem;
+    }
+
+    .preview-items {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .preview-card {
+        width: 90%;
+        max-width: 360px;
+    }
+
+    .preview-info {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .shop-link {
+        font-size: 1rem;
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .site-title {
+        font-size: 1.6rem;
+    }
+
+    .preview-card {
+        width: 95%;
+    }
 }
