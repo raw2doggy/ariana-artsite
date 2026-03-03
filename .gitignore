@@ -1,0 +1,7 @@
+root/node_modules/
+root/.env
+root/uploads/*
+!uploads/.gitkeep
+root/artsite.db
+root/artsite.db-shm
+root/artsite.db-wal
