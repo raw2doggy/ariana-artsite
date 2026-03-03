@@ -1,3 +1,12 @@
+/* ===== Anti-FOUC ===== */
+html:not(.ready) body {
+    visibility: hidden;
+}
+
+html.ready body {
+    visibility: visible;
+}
+
 /* ===== Shared Styles ===== */
 
 * {
@@ -46,16 +55,6 @@ body {
     background-color: rgba(255, 255, 255, 0.25);
     color: #fff;
     font-weight: bold;
-}
-
-.nav-admin {
-    margin-left: auto;
-    font-size: 0.9rem !important;
-    opacity: 0.7;
-}
-
-.nav-admin:hover {
-    opacity: 1;
 }
 
 /* ===== Common Page Title ===== */
@@ -107,6 +106,24 @@ body {
     opacity: 0.7;
 }
 
+.footer-admin {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+}
+
+.footer-admin:hover {
+    color: #fff;
+}
+
+.footer-admin.active {
+    color: rgba(255, 255, 255, 0.8);
+}
+
 /* ===== Mobile Responsive (Shared) ===== */
 @media (max-width: 768px) {
     .navbar {
@@ -125,11 +142,6 @@ body {
     .navbar a {
         font-size: 0.95rem;
         padding: 5px 10px;
-    }
-
-    .nav-admin {
-        order: 1;
-        margin-left: auto;
     }
 
     .page-title {

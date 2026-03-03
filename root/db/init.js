@@ -48,9 +48,17 @@ async function createTables() {
             id          INT AUTO_INCREMENT PRIMARY KEY,
             name        VARCHAR(255) NOT NULL,
             price_cents INT NOT NULL DEFAULT 0,
+            quantity    INT NOT NULL DEFAULT 0,
             created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    // Migration: add quantity column if it doesn't exist (for existing databases)
+    try {
+        await p.query(`ALTER TABLE shop_items ADD COLUMN quantity INT NOT NULL DEFAULT 0 AFTER price_cents`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
 
     await p.query(`
         CREATE TABLE IF NOT EXISTS shop_item_images (

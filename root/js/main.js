@@ -60,7 +60,7 @@ const SiteContent = (() => {
         container.innerHTML = "";
 
         const items  = data.shopItems || [];
-        const newest = items.slice(0, 2);
+        const newest = items.slice(-2).reverse();
 
         newest.forEach(item => {
             const card = document.createElement("div");
