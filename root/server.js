@@ -28,13 +28,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-<<<<<<< Updated upstream
 // ── Trust Nginx proxy (needed for secure cookies behind reverse proxy) ──
 app.set("trust proxy", 1);
 
-=======
->>>>>>> Stashed changes
 // ── Session middleware ─────────────────────────────────────────
+const useSecureCookie = (process.env.SITE_URL || "").startsWith("https");
 app.use(
     session({
         secret: process.env.SESSION_SECRET || "change-me-in-production",
@@ -42,12 +40,8 @@ app.use(
         saveUninitialized: false,
         cookie: {
             httpOnly: true,
-<<<<<<< Updated upstream
-            secure: (process.env.SITE_URL || "").startsWith("https"),
+            secure: useSecureCookie,
             sameSite: "lax",
-=======
-            secure: process.env.NODE_ENV === "production",
->>>>>>> Stashed changes
             maxAge: 30 * 60 * 1000 // 30 minutes
         }
     })
