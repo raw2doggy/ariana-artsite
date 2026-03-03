@@ -29,3 +29,22 @@
     font-style: italic;
     margin: 0;
 }
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+    .gallery {
+        padding: 20px 16px 30px;
+        gap: 20px;
+    }
+
+    .gallery-item {
+        width: 90%;
+        max-width: 360px;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-item {
+        width: 95%;
+    }
+}

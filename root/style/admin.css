@@ -241,3 +241,42 @@
     75%  { opacity: 1; }
     100% { opacity: 0; }
 }
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 0 12px 40px;
+    }
+
+    .admin-section {
+        padding: 14px;
+    }
+
+    .admin-item {
+        flex-direction: column;
+    }
+
+    .admin-item-fields {
+        flex-direction: column;
+    }
+
+    .admin-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-actions .admin-btn {
+        text-align: center;
+    }
+
+    #logout-btn {
+        position: static;
+        transform: none;
+        margin: 10px auto;
+        display: block;
+    }
+
+    .admin-header {
+        flex-direction: column;
+    }
+}
