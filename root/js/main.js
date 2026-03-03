@@ -69,11 +69,15 @@ const SiteContent = (() => {
             const srcs = getImageSrcList(item.images);
             card.innerHTML = `
                 ${_slideshowHTML(srcs, item.name)}
-                <div class="preview-info">${formatPrice(item.price_cents)} — ${_esc(item.name)}</div>`;
+                <div class="preview-info">
+                    <span>${formatPrice(item.price_cents)} — ${_esc(item.name)}</span>
+                    <button class="buy-btn" data-item-id="${item.id}">Buy Now</button>
+                </div>`;
             container.appendChild(card);
         });
 
         _initSlideshows(container);
+        _initBuyButtons(container);
     }
 
     function renderAbout() {

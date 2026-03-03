@@ -68,3 +68,15 @@
 .login-btn:hover {
     background-color: rgba(40, 5, 5, 1);
 }
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 480px) {
+    .login-container {
+        margin: 40px 16px;
+        padding: 30px 20px;
+    }
+
+    .login-title {
+        font-size: 1.6rem;
+    }
+}

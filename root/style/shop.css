@@ -144,3 +144,23 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+    #shop-items {
+        grid-template-columns: 1fr;
+        padding: 0 16px 30px;
+        gap: 20px;
+    }
+
+    .shop-info-bar {
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .buy-btn {
+        width: 100%;
+        padding: 10px;
+    }
+}

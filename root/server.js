@@ -28,6 +28,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── Trust Nginx proxy (needed for secure cookies behind reverse proxy) ──
+app.set("trust proxy", 1);
+
 // ── Session middleware ─────────────────────────────────────────
 app.use(
     session({
@@ -36,7 +39,8 @@ app.use(
         saveUninitialized: false,
         cookie: {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: (process.env.SITE_URL || "").startsWith("https"),
+            sameSite: "lax",
             maxAge: 30 * 60 * 1000 // 30 minutes
         }
     })
