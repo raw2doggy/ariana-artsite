@@ -3,44 +3,53 @@
 /* Site title */
 .site-title {
     text-align: center;
-    font-size: 3rem;
-    font-weight: bold;
-    margin: 20px 0 10px;
-    color: #000;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 3.2rem;
+    font-weight: 900;
+    margin: 45px 0 10px;
+    color: #e8e0d8;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 40px rgba(196, 30, 58, 0.15);
 }
 
 /* Divider under the title */
 .title-divider {
     border: none;
-    border-top: 3px solid #000;
-    width: 80%;
-    margin: 0 auto 30px;
+    height: 1px;
+    width: 55%;
+    margin: 0 auto 40px;
+    background: linear-gradient(90deg, transparent, #c41e3a, transparent);
 }
 
 /* Welcome section */
 .welcome {
     text-align: center;
     max-width: 700px;
-    margin: 0 auto 40px;
+    margin: 0 auto 50px;
     padding: 0 20px;
 }
 
 .welcome-text {
-    font-size: 1.2rem;
-    line-height: 1.8;
-    color: #222;
+    font-size: 1.15rem;
+    line-height: 1.9;
+    color: rgba(232, 224, 216, 0.65);
+    font-weight: 300;
 }
 
 /* Preview section */
 .preview {
     text-align: center;
-    padding: 0 20px 50px;
+    padding: 0 20px 60px;
 }
 
 .preview-heading {
+    font-family: 'Cinzel', 'Times New Roman', serif;
     font-size: 1.8rem;
-    margin-bottom: 25px;
-    color: #000;
+    margin-bottom: 30px;
+    color: #e8e0d8;
+    letter-spacing: 3px;
+    text-transform: uppercase;
 }
 
 .preview-items {
@@ -48,15 +57,23 @@
     justify-content: center;
     gap: 30px;
     flex-wrap: wrap;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
 }
 
 /* Individual preview card */
 .preview-card {
     width: 300px;
-    border: 4px solid #000;
+    border: 1px solid rgba(196, 30, 58, 0.25);
     overflow: hidden;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: #1a1717;
+    border-radius: 12px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.preview-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 35px rgba(196, 30, 58, 0.15);
+    border-color: rgba(196, 30, 58, 0.6);
 }
 
 .preview-card .slideshow {
@@ -64,15 +81,16 @@
 }
 
 .preview-info {
-    background-color: rgba(60, 10, 10, 0.75);
-    color: #fff;
+    background-color: #1a1010;
+    color: #e8e0d8;
     text-align: center;
-    padding: 10px 8px;
-    font-size: 1.1rem;
+    padding: 12px 10px;
+    font-size: 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
+    border-top: 1px solid rgba(196, 30, 58, 0.15);
 }
 
 .preview-info span {
@@ -82,24 +100,28 @@
 /* Shop link */
 .shop-link {
     display: inline-block;
-    font-size: 1.2rem;
-    color: #000;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 0.95rem;
+    color: #c41e3a;
     text-decoration: none;
-    border: 2px solid #000;
-    padding: 10px 28px;
-    border-radius: 4px;
-    transition: background-color 0.2s, color 0.2s;
+    border: 1px solid #c41e3a;
+    padding: 12px 34px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
 }
 
 .shop-link:hover {
-    background-color: #000;
-    color: #fff;
+    background-color: #c41e3a;
+    color: #e8e0d8;
+    box-shadow: 0 0 25px rgba(196, 30, 58, 0.3);
 }
 
 /* ===== Mobile Responsive ===== */
 @media (max-width: 768px) {
     .site-title {
-        font-size: 2rem;
+        font-size: 2.2rem;
+        letter-spacing: 3px;
     }
 
     .welcome-text {
@@ -126,14 +148,15 @@
     }
 
     .shop-link {
-        font-size: 1rem;
-        padding: 10px 20px;
+        font-size: 0.85rem;
+        padding: 10px 24px;
     }
 }
 
 @media (max-width: 480px) {
     .site-title {
-        font-size: 1.6rem;
+        font-size: 1.8rem;
+        letter-spacing: 2px;
     }
 
     .preview-card {

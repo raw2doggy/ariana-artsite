@@ -16,10 +16,29 @@ html.ready body {
 }
 
 body {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: 'Raleway', 'Segoe UI', sans-serif;
+    font-weight: 400;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background-color: #0d0d0d;
+    color: #e8e0d8;
+}
+
+/* Subtle grain texture overlay */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
 }
 
 .site-footer {
@@ -28,11 +47,12 @@ body {
 
 /* ===== Navbar ===== */
 .navbar {
-    background-color: rgba(40, 5, 5, 0.85);
+    background-color: #121010;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 20px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(196, 30, 58, 0.2);
 }
 
 .nav-links {
@@ -43,49 +63,77 @@ body {
 }
 
 .navbar a {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(232, 224, 216, 0.45);
     text-decoration: none;
-    font-size: 1.1rem;
-    letter-spacing: 1px;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 0.95rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
     padding: 6px 14px;
-    border-radius: 4px;
-    transition: background-color 0.2s, color 0.2s;
+    border-radius: 2px;
+    transition: color 0.3s, text-shadow 0.3s;
+    position: relative;
+}
+
+.navbar a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 1px;
+    background: #c41e3a;
+    transition: width 0.3s ease;
+}
+
+.navbar a:hover::after {
+    width: 80%;
 }
 
 .navbar a:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    color: #e8e0d8;
+    text-shadow: 0 0 20px rgba(196, 30, 58, 0.35);
 }
 
 .navbar a.active {
-    background-color: rgba(255, 255, 255, 0.25);
-    color: #fff;
-    font-weight: bold;
+    color: #e8e0d8;
+    font-weight: 700;
+}
+
+.navbar a.active::after {
+    width: 80%;
+    background: #c41e3a;
 }
 
 /* ===== Common Page Title ===== */
 .page-title {
     text-align: center;
+    font-family: 'Cinzel', 'Times New Roman', serif;
     font-size: 2.5rem;
-    font-weight: bold;
+    font-weight: 700;
     margin: 30px 0 10px;
-    color: #000;
+    color: #e8e0d8;
+    letter-spacing: 3px;
+    text-transform: uppercase;
 }
 
 .page-divider {
     border: none;
-    border-top: 3px solid #000;
+    height: 1px;
     width: 80%;
     margin: 0 auto 30px;
+    background: linear-gradient(90deg, transparent, #c41e3a, transparent);
 }
 
 /* ===== Footer ===== */
 .site-footer {
-    background-color: rgba(40, 5, 5, 0.85);
-    color: rgba(255, 255, 255, 0.6);
+    background-color: #121010;
+    color: rgba(232, 224, 216, 0.5);
     text-align: center;
     padding: 30px 20px 20px;
     font-size: 0.95rem;
+    border-top: 1px solid rgba(196, 30, 58, 0.2);
 }
 
 .footer-links {
@@ -96,37 +144,65 @@ body {
 }
 
 .footer-links a {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(232, 224, 216, 0.45);
     text-decoration: none;
-    letter-spacing: 1px;
-    transition: color 0.2s;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    transition: color 0.3s, text-shadow 0.3s;
 }
 
 .footer-links a:hover {
-    color: #fff;
+    color: #e8e0d8;
+    text-shadow: 0 0 15px rgba(196, 30, 58, 0.25);
 }
 
 .footer-copy {
     font-size: 0.85rem;
-    opacity: 0.7;
+    opacity: 0.4;
 }
 
 .footer-admin {
     display: inline-block;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(232, 224, 216, 0.25);
     text-decoration: none;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     letter-spacing: 1px;
     margin-bottom: 10px;
-    transition: color 0.2s;
+    transition: color 0.3s;
 }
 
 .footer-admin:hover {
-    color: #fff;
+    color: rgba(232, 224, 216, 0.6);
 }
 
 .footer-admin.active {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(232, 224, 216, 0.5);
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0d0d0d;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a2222;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3a2e2e;
+}
+
+/* ===== Selection ===== */
+::selection {
+    background: rgba(196, 30, 58, 0.4);
+    color: #fff;
 }
 
 /* ===== Mobile Responsive (Shared) ===== */
@@ -145,12 +221,14 @@ body {
     }
 
     .navbar a {
-        font-size: 0.95rem;
+        font-size: 0.82rem;
         padding: 5px 10px;
+        letter-spacing: 1.5px;
     }
 
     .page-title {
         font-size: 1.8rem;
+        letter-spacing: 2px;
     }
 
     .page-divider {
@@ -173,7 +251,7 @@ body {
     }
 
     .navbar a {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         padding: 4px 8px;
     }
 

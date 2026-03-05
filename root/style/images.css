@@ -7,14 +7,14 @@
 
 .images-loading {
     text-align: center;
-    color: #888;
+    color: rgba(232, 224, 216, 0.45);
     padding: 40px 0;
     font-size: 1.1rem;
 }
 
 .images-empty {
     text-align: center;
-    color: #888;
+    color: rgba(232, 224, 216, 0.45);
     padding: 40px 0;
     font-size: 1.1rem;
 }
@@ -29,33 +29,35 @@
 .images-table thead th {
     text-align: left;
     padding: 10px 12px;
-    border-bottom: 2px solid #333;
-    font-size: 0.85rem;
-    color: #444;
+    border-bottom: 1px solid rgba(196, 30, 58, 0.35);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    color: rgba(232, 224, 216, 0.45);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
 }
 
 .images-table tbody tr {
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid rgba(232, 224, 216, 0.05);
     transition: background-color 0.15s;
 }
 
 .images-table tbody tr:hover {
-    background-color: #f5f5f5;
+    background-color: rgba(196, 30, 58, 0.04);
 }
 
 .images-table td {
     padding: 10px 12px;
     vertical-align: middle;
+    color: rgba(232, 224, 216, 0.75);
 }
 
 .images-table .img-thumb {
     width: 50px;
     height: 50px;
     object-fit: cover;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+    border-radius: 3px;
+    border: 1px solid rgba(232, 224, 216, 0.1);
 }
 
 .img-name-cell {
@@ -100,7 +102,7 @@
 }
 
 .admin-btn-cancel {
-    background-color: #7f8c8d;
+    background-color: #555;
     color: #fff;
 }
 
@@ -111,7 +113,7 @@
     font-size: 0.95rem;
     font-family: inherit;
     border: none;
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
     margin-bottom: 16px;
     transition: opacity 0.2s;
@@ -147,7 +149,7 @@
 .preview-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
 }
 
 .preview-content {
@@ -161,8 +163,8 @@
     max-width: 90vw;
     max-height: 85vh;
     display: block;
-    border-radius: 6px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    box-shadow: 0 4px 40px rgba(196, 30, 58, 0.2);
 }
 
 .preview-close {
@@ -173,18 +175,18 @@
     height: 36px;
     border-radius: 50%;
     border: none;
-    background: #c0392b;
+    background: #c41e3a;
     color: #fff;
     font-size: 22px;
     line-height: 34px;
     text-align: center;
     cursor: pointer;
     z-index: 2;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 12px rgba(196, 30, 58, 0.4);
 }
 
 .preview-close:hover {
-    background: #e74c3c;
+    background: #e63950;
 }
 
 /* ── Delete Confirmation Modal ───────────────────────────── */
@@ -204,23 +206,24 @@
 .delete-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .delete-dialog {
     position: relative;
     z-index: 1;
-    background: #fff;
+    background: #1a1717;
     padding: 30px 40px;
-    border-radius: 8px;
+    border-radius: 6px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
     font-size: 1.1rem;
+    border: 1px solid rgba(232, 224, 216, 0.1);
 }
 
 .delete-dialog p {
     margin-bottom: 20px;
-    color: #222;
+    color: #e8e0d8;
 }
 
 .delete-dialog-actions {
