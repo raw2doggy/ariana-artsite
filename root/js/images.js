@@ -9,6 +9,7 @@ const ImageManager = (() => {
     "use strict";
 
     let _pendingDelete = null; // { source, id, row }
+    let _deleteAllUnusedMode = false;
 
     // ── API Helpers ────────────────────────────────────────
 
@@ -51,6 +52,23 @@ const ImageManager = (() => {
         }
 
         container.innerHTML = "";
+
+        // "Delete All Unused" button (only show if there are unused images)
+        const hasUnused = images.some(img => img.source === "unused");
+        if (hasUnused) {
+            const deleteAllBtn = document.createElement("button");
+            deleteAllBtn.className = "admin-btn admin-btn-delete-unused";
+            deleteAllBtn.id = "delete-all-unused-btn";
+            deleteAllBtn.textContent = "Delete All Unused Images";
+            deleteAllBtn.addEventListener("click", () => {
+                _deleteAllUnusedMode = true;
+                document.querySelector("#delete-modal .delete-dialog p").textContent =
+                    "Are you sure you want to delete ALL unused images? This cannot be undone.";
+                document.getElementById("delete-modal").classList.remove("hidden");
+            });
+            container.appendChild(deleteAllBtn);
+        }
+
         const table = document.createElement("table");
         table.className = "images-table";
 
@@ -98,11 +116,14 @@ const ImageManager = (() => {
             deleteBtn.className = "admin-btn admin-btn-delete";
             deleteBtn.textContent = "Delete";
             deleteBtn.addEventListener("click", () => {
+                _deleteAllUnusedMode = false;
                 _pendingDelete = {
                     source: img.source,
-                    id: img.id,
+                    id: img.source === "unused" ? fileName : img.id,
                     row: row
                 };
+                document.querySelector("#delete-modal .delete-dialog p").textContent =
+                    "Are you sure you want to delete this file?";
                 document.getElementById("delete-modal").classList.remove("hidden");
             });
 
@@ -146,13 +167,38 @@ const ImageManager = (() => {
     // ── Delete with Confirmation ───────────────────────────
 
     async function confirmDelete() {
+        if (_deleteAllUnusedMode) {
+            // Delete ALL unused images
+            try {
+                await apiFetch("/api/images/unused", { method: "DELETE" });
+                // Remove all unused rows from the table
+                document.querySelectorAll(".images-table tbody tr").forEach(row => {
+                    if (row.querySelector(".img-source-badge.unused")) row.remove();
+                });
+                // Remove the "Delete All Unused" button
+                const btn = document.getElementById("delete-all-unused-btn");
+                if (btn) btn.remove();
+                // Check if table is now empty
+                const tbody = document.querySelector(".images-table tbody");
+                if (tbody && tbody.children.length === 0) {
+                    document.getElementById("images-list").innerHTML =
+                        '<p class="images-empty">No uploaded images found.</p>';
+                }
+            } catch (e) {
+                alert("Failed to delete unused images: " + e.message);
+            }
+            _deleteAllUnusedMode = false;
+            document.getElementById("delete-modal").classList.add("hidden");
+            return;
+        }
+
         if (!_pendingDelete) return;
 
         const { source, id, row } = _pendingDelete;
 
         try {
             const delId = source === "about" ? "0" : id;
-            await apiFetch(`/api/images/${source}/${delId}`, { method: "DELETE" });
+            await apiFetch(`/api/images/${source}/${encodeURIComponent(delId)}`, { method: "DELETE" });
             row.remove();
 
             // Check if table is now empty
@@ -160,6 +206,13 @@ const ImageManager = (() => {
             if (tbody && tbody.children.length === 0) {
                 document.getElementById("images-list").innerHTML =
                     '<p class="images-empty">No uploaded images found.</p>';
+            }
+
+            // Hide "Delete All Unused" if no unused remain
+            const hasUnused = document.querySelector(".images-table .img-source-badge.unused");
+            if (!hasUnused) {
+                const btn = document.getElementById("delete-all-unused-btn");
+                if (btn) btn.remove();
             }
         } catch (e) {
             alert("Failed to delete image: " + e.message);
@@ -171,6 +224,7 @@ const ImageManager = (() => {
 
     function cancelDelete() {
         _pendingDelete = null;
+        _deleteAllUnusedMode = false;
         document.getElementById("delete-modal").classList.add("hidden");
     }
 

@@ -76,6 +76,7 @@
 .img-source-badge.shop      { background-color: #27ae60; }
 .img-source-badge.portfolio  { background-color: #2980b9; }
 .img-source-badge.about      { background-color: #8e44ad; }
+.img-source-badge.unused     { background-color: #e74c3c; }
 
 .img-actions {
     display: flex;
@@ -101,6 +102,23 @@
 .admin-btn-cancel {
     background-color: #7f8c8d;
     color: #fff;
+}
+
+.admin-btn-delete-unused {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: opacity 0.2s;
+}
+
+.admin-btn-delete-unused:hover {
+    opacity: 0.85;
 }
 
 .admin-btn-back {
