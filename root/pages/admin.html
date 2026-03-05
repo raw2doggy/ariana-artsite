@@ -6,7 +6,6 @@
     <title>Admin Dashboard - Ariana's Art Site</title>
     <link rel="stylesheet" href="../style/style.css">
     <link rel="stylesheet" href="../style/admin.css">
-    <script>document.documentElement.classList.add('ready');</script>
     <noscript><style>html{visibility:visible!important}</style></noscript>
 </head>
 <body>
@@ -42,14 +41,24 @@
     <script src="../js/auth.js"></script>
     <script src="../js/admin.js"></script>
     <script>
-        (() => {
+        (async () => {
             "use strict";
 
-            // Quick redirect if not logged in
+            // Quick redirect if sessionStorage says not logged in
             if (!Auth.isLoggedIn()) {
                 window.location.href = "login.html";
                 return;
             }
+
+            // Verify session with the server before showing anything
+            const valid = await Auth.checkSession();
+            if (!valid) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            // Auth confirmed — reveal the page
+            document.documentElement.classList.add('ready');
 
             // Render the editable dashboard (async — fetches from API)
             Admin.renderDashboard();

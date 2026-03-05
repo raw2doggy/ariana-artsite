@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="../style/style.css">
     <link rel="stylesheet" href="../style/admin.css">
     <link rel="stylesheet" href="../style/images.css">
-    <script>document.documentElement.classList.add('ready');</script>
     <noscript><style>html{visibility:visible!important}</style></noscript>
 </head>
 <body>
@@ -67,12 +66,25 @@
     <script src="../js/auth.js"></script>
     <script src="../js/images.js"></script>
     <script>
-        (() => {
+        (async () => {
             "use strict";
+
+            // Quick redirect if sessionStorage says not logged in
             if (!Auth.isLoggedIn()) {
                 window.location.href = "login.html";
                 return;
             }
+
+            // Verify session with the server before showing anything
+            const valid = await Auth.checkSession();
+            if (!valid) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            // Auth confirmed — reveal the page
+            document.documentElement.classList.add('ready');
+
             ImageManager.init();
         })();
     </script>
