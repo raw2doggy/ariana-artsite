@@ -7,6 +7,7 @@
  * DELETE /api/portfolio/:id            — admin:  delete item + its images
  * POST   /api/portfolio/:id/images     — admin:  upload an image for an item
  * DELETE /api/portfolio/images/:imgId  — admin:  delete a single image
+ * POST   /api/portfolio/:id/to-shop    — admin:  duplicate into shop (keeps portfolio item)
  */
 
 const express      = require("express");
@@ -41,7 +42,7 @@ const upload = multer({
 router.get("/", async (_req, res) => {
     try {
         const pool  = getPool();
-        const [items] = await pool.query("SELECT * FROM portfolio_items ORDER BY created_at DESC");
+        const [items] = await pool.query("SELECT * FROM portfolio_items ORDER BY created_at ASC");
 
         for (const item of items) {
             const [imgs] = await pool.query(
@@ -177,6 +178,56 @@ router.delete("/images/:imgId", requireAdmin, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error("DELETE /api/portfolio/images error:", err);
+        res.status(500).json({ error: "Database error." });
+    }
+});
+
+// ── POST /:id/to-shop ──────────────────────────────────────
+router.post("/:id/to-shop", requireAdmin, async (req, res) => {
+    try {
+        const pool = getPool();
+        const [rows] = await pool.query("SELECT * FROM portfolio_items WHERE id = ?", [req.params.id]);
+        if (!rows.length) return res.status(404).json({ error: "Item not found." });
+
+        const portItem = rows[0];
+
+        // Create a new shop item using the portfolio title as the name
+        const [result] = await pool.query(
+            "INSERT INTO shop_items (name, price_cents, quantity) VALUES (?, ?, ?)",
+            [portItem.title, 0, 1]
+        );
+        const shopId = result.insertId;
+
+        // Copy portfolio images to the new shop item (duplicate files so each is independent)
+        const [imgs] = await pool.query(
+            "SELECT * FROM portfolio_item_images WHERE portfolio_item_id = ? ORDER BY sort_order",
+            [req.params.id]
+        );
+        for (const img of imgs) {
+            const origFile = path.join(__dirname, "..", img.image_path);
+            const ext      = path.extname(img.image_path);
+            const rand     = Math.random().toString(36).slice(2, 8);
+            const newName  = `shop-${Date.now()}-${rand}${ext}`;
+            const newFile  = path.join(__dirname, "..", "uploads", newName);
+            if (fs.existsSync(origFile)) fs.copyFileSync(origFile, newFile);
+            await pool.query(
+                "INSERT INTO shop_item_images (shop_item_id, image_path, sort_order) VALUES (?, ?, ?)",
+                [shopId, "/uploads/" + newName, img.sort_order]
+            );
+        }
+
+        // Return the new shop item with its images
+        const [sRows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [shopId]);
+        const item = sRows[0];
+        const [sImgs] = await pool.query(
+            "SELECT * FROM shop_item_images WHERE shop_item_id = ? ORDER BY sort_order",
+            [shopId]
+        );
+        item.images = sImgs;
+
+        res.json(item);
+    } catch (err) {
+        console.error("POST /api/portfolio/:id/to-shop error:", err);
         res.status(500).json({ error: "Database error." });
     }
 });

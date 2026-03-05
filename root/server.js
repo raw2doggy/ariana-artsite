@@ -24,8 +24,11 @@ app.use(
     })
 );
 
-// ── Body parsers ───────────────────────────────────────────────
-app.use(express.json());
+// ── Body parsers (skip JSON parsing for Stripe webhook) ────────
+app.use((req, res, next) => {
+    if (req.originalUrl === "/api/checkout/webhook") return next();
+    express.json()(req, res, next);
+});
 app.use(express.urlencoded({ extended: true }));
 
 // ── Trust Nginx proxy (needed for secure cookies behind reverse proxy) ──
@@ -50,12 +53,20 @@ app.use(
 // ── Serve uploaded images ──────────────────────────────────────
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// ── Stripe webhook needs raw body — mount BEFORE json parser would strip it ──
+const checkoutRoutes = require("./routes/checkout");
+app.use("/api/checkout/webhook",
+    express.raw({ type: "application/json" }),
+    (req, _res, next) => { req._rawBodyParsed = true; next(); }
+);
+
 // ── API Routes ─────────────────────────────────────────────────
 app.use("/api/auth",      require("./routes/auth"));
 app.use("/api/content",   require("./routes/content"));
 app.use("/api/shop",      require("./routes/shop"));
 app.use("/api/portfolio", require("./routes/portfolio"));
-app.use("/api/checkout",  require("./routes/checkout"));
+app.use("/api/images",    require("./routes/images"));
+app.use("/api/checkout",  checkoutRoutes);
 
 // ── Serve static site files (HTML, CSS, JS, img) ──────────────
 app.use(express.static(__dirname, {

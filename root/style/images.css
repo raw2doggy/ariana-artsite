@@ -1,0 +1,260 @@
+/* ===== Image Manager Styles ===== */
+
+.images-container {
+    width: 900px;
+    max-width: 95%;
+}
+
+.images-loading {
+    text-align: center;
+    color: #888;
+    padding: 40px 0;
+    font-size: 1.1rem;
+}
+
+.images-empty {
+    text-align: center;
+    color: #888;
+    padding: 40px 0;
+    font-size: 1.1rem;
+}
+
+/* ── Image table ─────────────────────────────────────────── */
+.images-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.images-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid #333;
+    font-size: 0.85rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.images-table tbody tr {
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.15s;
+}
+
+.images-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.images-table td {
+    padding: 10px 12px;
+    vertical-align: middle;
+}
+
+.images-table .img-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.img-name-cell {
+    word-break: break-all;
+}
+
+.img-source-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.img-source-badge.shop      { background-color: #27ae60; }
+.img-source-badge.portfolio  { background-color: #2980b9; }
+.img-source-badge.about      { background-color: #8e44ad; }
+.img-source-badge.unused     { background-color: #e74c3c; }
+
+.img-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.img-actions .admin-btn {
+    font-size: 0.82rem;
+    padding: 5px 12px;
+}
+
+.admin-btn-preview {
+    background-color: #2980b9;
+    color: #fff;
+}
+
+.admin-btn-download {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+.admin-btn-cancel {
+    background-color: #7f8c8d;
+    color: #fff;
+}
+
+.admin-btn-delete-unused {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: opacity 0.2s;
+}
+
+.admin-btn-delete-unused:hover {
+    opacity: 0.85;
+}
+
+.admin-btn-back {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+/* ── Preview Modal ───────────────────────────────────────── */
+.preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-modal.hidden {
+    display: none;
+}
+
+.preview-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.preview-content {
+    position: relative;
+    z-index: 1;
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+.preview-content img {
+    max-width: 90vw;
+    max-height: 85vh;
+    display: block;
+    border-radius: 6px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.preview-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #c0392b;
+    color: #fff;
+    font-size: 22px;
+    line-height: 34px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.preview-close:hover {
+    background: #e74c3c;
+}
+
+/* ── Delete Confirmation Modal ───────────────────────────── */
+.delete-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-modal.hidden {
+    display: none;
+}
+
+.delete-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.delete-dialog {
+    position: relative;
+    z-index: 1;
+    background: #fff;
+    padding: 30px 40px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    font-size: 1.1rem;
+}
+
+.delete-dialog p {
+    margin-bottom: 20px;
+    color: #222;
+}
+
+.delete-dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.delete-dialog-actions .admin-btn {
+    min-width: 120px;
+    font-size: 0.95rem;
+    padding: 10px 20px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .images-container {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .images-table .img-thumb {
+        width: 36px;
+        height: 36px;
+    }
+
+    .img-actions {
+        flex-direction: column;
+    }
+
+    .admin-btn-back {
+        position: static;
+        transform: none;
+        display: block;
+        margin: 10px auto;
+    }
+}

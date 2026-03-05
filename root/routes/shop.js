@@ -38,10 +38,15 @@ const upload = multer({
 });
 
 // ── GET / ───────────────────────────────────────────────────
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
     try {
         const pool  = getPool();
-        const [items] = await pool.query("SELECT * FROM shop_items ORDER BY created_at DESC");
+        // Admin can pass ?all=true to see items with quantity 0
+        const showAll = req.query.all === "true" && req.session && req.session.isAdmin;
+        const query = showAll
+            ? "SELECT * FROM shop_items ORDER BY created_at ASC"
+            : "SELECT * FROM shop_items WHERE quantity > 0 ORDER BY created_at ASC";
+        const [items] = await pool.query(query);
 
         for (const item of items) {
             const [imgs] = await pool.query(
@@ -61,12 +66,12 @@ router.get("/", async (_req, res) => {
 // ── POST / ──────────────────────────────────────────────────
 router.post("/", requireAdmin, async (req, res) => {
     try {
-        const { name, price_cents } = req.body;
+        const { name, price_cents, quantity } = req.body;
         const pool = getPool();
 
         const [result] = await pool.query(
-            "INSERT INTO shop_items (name, price_cents) VALUES (?, ?)",
-            [name || "New Item", parseInt(price_cents) || 0]
+            "INSERT INTO shop_items (name, price_cents, quantity) VALUES (?, ?, ?)",
+            [name || "New Item", parseInt(price_cents) || 0, parseInt(quantity) || 0]
         );
 
         const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [result.insertId]);
@@ -82,12 +87,12 @@ router.post("/", requireAdmin, async (req, res) => {
 // ── PUT /:id ────────────────────────────────────────────────
 router.put("/:id", requireAdmin, async (req, res) => {
     try {
-        const { name, price_cents } = req.body;
+        const { name, price_cents, quantity } = req.body;
         const pool = getPool();
 
         await pool.query(
-            "UPDATE shop_items SET name = ?, price_cents = ? WHERE id = ?",
-            [name || "Untitled", parseInt(price_cents) || 0, req.params.id]
+            "UPDATE shop_items SET name = ?, price_cents = ?, quantity = ? WHERE id = ?",
+            [name || "Untitled", parseInt(price_cents) || 0, parseInt(quantity) || 0, req.params.id]
         );
 
         const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [req.params.id]);
@@ -177,6 +182,55 @@ router.delete("/images/:imgId", requireAdmin, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error("DELETE /api/shop/images error:", err);
+        res.status(500).json({ error: "Database error." });
+    }
+});
+
+// ── POST /:id/to-portfolio ──────────────────────────────────
+router.post("/:id/to-portfolio", requireAdmin, async (req, res) => {
+    try {
+        const pool = getPool();
+        const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [req.params.id]);
+        if (!rows.length) return res.status(404).json({ error: "Item not found." });
+
+        const shopItem = rows[0];
+
+        // Create portfolio item with the shop item's name
+        const [result] = await pool.query(
+            "INSERT INTO portfolio_items (title) VALUES (?)",
+            [shopItem.name]
+        );
+        const portfolioId = result.insertId;
+
+        // Copy all shop images to portfolio (files stay on disk, just new DB refs)
+        const [imgs] = await pool.query(
+            "SELECT * FROM shop_item_images WHERE shop_item_id = ? ORDER BY sort_order",
+            [req.params.id]
+        );
+        for (const img of imgs) {
+            await pool.query(
+                "INSERT INTO portfolio_item_images (portfolio_item_id, image_path, sort_order) VALUES (?, ?, ?)",
+                [portfolioId, img.image_path, img.sort_order]
+            );
+        }
+
+        // Remove shop image records (keep files on disk since portfolio now references them)
+        await pool.query("DELETE FROM shop_item_images WHERE shop_item_id = ?", [req.params.id]);
+        // Remove the shop item itself
+        await pool.query("DELETE FROM shop_items WHERE id = ?", [req.params.id]);
+
+        // Return the new portfolio item with images
+        const [pRows] = await pool.query("SELECT * FROM portfolio_items WHERE id = ?", [portfolioId]);
+        const item = pRows[0];
+        const [pImgs] = await pool.query(
+            "SELECT * FROM portfolio_item_images WHERE portfolio_item_id = ? ORDER BY sort_order",
+            [portfolioId]
+        );
+        item.images = pImgs;
+
+        res.json(item);
+    } catch (err) {
+        console.error("POST /api/shop/:id/to-portfolio error:", err);
         res.status(500).json({ error: "Database error." });
     }
 });

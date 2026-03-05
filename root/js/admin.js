@@ -13,6 +13,8 @@ const Admin = (() => {
 
     async function apiFetch(url, options = {}) {
         const isForm = options.body instanceof FormData;
+        const method = (options.method || "GET").toUpperCase();
+        const needsBody = method === "POST" || method === "PUT" || method === "PATCH";
         const res = await fetch(url, {
             ...options,
             headers: {
@@ -23,7 +25,7 @@ const Admin = (() => {
                 ? options.body
                 : options.body
                     ? JSON.stringify(options.body)
-                    : undefined
+                    : needsBody ? "{}" : undefined
         });
 
         if (res.status === 401) {
@@ -38,7 +40,7 @@ const Admin = (() => {
     async function fetchAllData() {
         const [content, shopItems, portfolioItems] = await Promise.all([
             apiFetch("/api/content"),
-            apiFetch("/api/shop"),
+            apiFetch("/api/shop?all=true"),
             apiFetch("/api/portfolio")
         ]);
         return { ...content, shopItems, portfolioItems };
@@ -57,7 +59,7 @@ const Admin = (() => {
 
     // ── Image Upload Button ─────────────────────────────────
 
-    function _createUploadBtn(labelText, uploadUrl) {
+    function _createUploadBtn(labelText, uploadUrl, onUploaded) {
         const wrap = document.createElement("div");
         wrap.className = "admin-field admin-upload";
 
@@ -72,11 +74,13 @@ const Admin = (() => {
                 try {
                     const fd = new FormData();
                     fd.append("image", input.files[0]);
-                    await fetch(uploadUrl, { method: "POST", body: fd });
-                    renderDashboard(); // refresh
+                    const res = await fetch(uploadUrl, { method: "POST", body: fd });
+                    const imgData = await res.json();
+                    if (onUploaded) onUploaded(imgData);
                 } catch (e) {
                     alert("Could not upload image: " + e.message);
                 }
+                input.value = "";
             }
         });
 
@@ -110,6 +114,8 @@ const Admin = (() => {
             if (!items[id]) items[id] = {};
             if (el.dataset.prop === "price") {
                 items[id].price_cents = displayToCents(el.value);
+            } else if (el.dataset.prop === "quantity") {
+                items[id].quantity = parseInt(el.value) || 0;
             } else {
                 items[id][el.dataset.prop] = el.value;
             }
@@ -160,9 +166,19 @@ const Admin = (() => {
         // About photo
         const aboutPhotoWrap = document.createElement("div");
         aboutPhotoWrap.className = "admin-field";
-        if (data.aboutImage) aboutPhotoWrap.appendChild(_imagePreview(data.aboutImage));
+        const aboutPreview = data.aboutImage ? _imagePreview(data.aboutImage) : null;
+        if (aboutPreview) aboutPhotoWrap.appendChild(aboutPreview);
         aboutPhotoWrap.appendChild(
-            _createUploadBtn("About Page Photo", "/api/content/about-image")
+            _createUploadBtn("About Page Photo", "/api/content/about-image", (imgData) => {
+                // Targeted update: replace or add preview image
+                const existing = aboutPhotoWrap.querySelector(".admin-img-preview");
+                if (existing) {
+                    existing.src = imgData.image_path || imgData.value || ("/api/content/about-image?" + Date.now());
+                } else {
+                    const newPreview = _imagePreview(imgData.image_path || imgData.value || "");
+                    aboutPhotoWrap.insertBefore(newPreview, aboutPhotoWrap.firstChild);
+                }
+            })
         );
         textSection.appendChild(aboutPhotoWrap);
 
@@ -178,11 +194,12 @@ const Admin = (() => {
         addShopBtn.className   = "admin-btn admin-btn-add";
         addShopBtn.textContent = "+ Add Shop Item";
         addShopBtn.addEventListener("click", async () => {
-            await apiFetch("/api/shop", {
+            const newItem = await apiFetch("/api/shop", {
                 method: "POST",
-                body:   { name: "New Item", price_cents: 0 }
+                body:   { name: "New Item", price_cents: 0, quantity: 0 }
             });
-            renderDashboard();
+            // Insert the new item editor before the add button (at the bottom)
+            shopSection.insertBefore(_shopItemEditor(newItem), addShopBtn);
         });
         shopSection.appendChild(addShopBtn);
         container.appendChild(shopSection);
@@ -197,11 +214,12 @@ const Admin = (() => {
         addPortBtn.className   = "admin-btn admin-btn-add";
         addPortBtn.textContent = "+ Add Portfolio Item";
         addPortBtn.addEventListener("click", async () => {
-            await apiFetch("/api/portfolio", {
+            const newItem = await apiFetch("/api/portfolio", {
                 method: "POST",
                 body:   { title: "New Piece" }
             });
-            renderDashboard();
+            // Insert the new item editor before the add button (at the bottom)
+            portSection.insertBefore(_portfolioItemEditor(newItem), addPortBtn);
         });
         portSection.appendChild(addPortBtn);
         container.appendChild(portSection);
@@ -258,6 +276,34 @@ const Admin = (() => {
         return wrap;
     }
 
+    // ── Shared Thumbnail Helpers ───────────────────────────
+
+    function _createThumbWrap(img, type, galLabel, thumbsContainer) {
+        const thumbWrap = document.createElement("div");
+        thumbWrap.className = "admin-thumb-wrap";
+        const thumb = document.createElement("img");
+        thumb.className = "admin-img-preview";
+        thumb.src = img.image_path;
+        thumb.alt = "Image";
+        const removeBtn = document.createElement("button");
+        removeBtn.className   = "admin-btn admin-btn-thumb-remove";
+        removeBtn.textContent = "\u00D7";
+        removeBtn.title       = "Remove image";
+        removeBtn.addEventListener("click", async () => {
+            await apiFetch(`/api/${type}/images/${img.id}`, { method: "DELETE" });
+            thumbWrap.remove();
+            _updateImageCount(galLabel, thumbsContainer);
+        });
+        thumbWrap.appendChild(thumb);
+        thumbWrap.appendChild(removeBtn);
+        return thumbWrap;
+    }
+
+    function _updateImageCount(galLabel, thumbsContainer) {
+        const count = thumbsContainer.querySelectorAll(".admin-thumb-wrap").length;
+        galLabel.textContent = "Images (" + count + ")";
+    }
+
     // ── Shop Item Editor ────────────────────────────────────
 
     function _shopItemEditor(item) {
@@ -277,6 +323,11 @@ const Admin = (() => {
                 <label>Price ($)</label>
                 <input type="text" data-type="shop" data-id="${item.id}" data-prop="price"
                        value="${centsToDisplay(item.price_cents || 0)}">
+            </div>
+            <div class="admin-field">
+                <label>Quantity</label>
+                <input type="number" data-type="shop" data-id="${item.id}" data-prop="quantity"
+                       value="${item.quantity || 0}" min="0">
             </div>`;
         wrap.appendChild(fields);
 
@@ -291,28 +342,16 @@ const Admin = (() => {
         const thumbs = document.createElement("div");
         thumbs.className = "admin-thumbs";
         images.forEach(img => {
-            const thumbWrap = document.createElement("div");
-            thumbWrap.className = "admin-thumb-wrap";
-            const thumb = document.createElement("img");
-            thumb.className = "admin-img-preview";
-            thumb.src = img.image_path;
-            thumb.alt = "Image";
-            const removeBtn = document.createElement("button");
-            removeBtn.className   = "admin-btn admin-btn-thumb-remove";
-            removeBtn.textContent = "\u00D7";
-            removeBtn.title       = "Remove image";
-            removeBtn.addEventListener("click", async () => {
-                await apiFetch(`/api/shop/images/${img.id}`, { method: "DELETE" });
-                renderDashboard();
-            });
-            thumbWrap.appendChild(thumb);
-            thumbWrap.appendChild(removeBtn);
-            thumbs.appendChild(thumbWrap);
+            thumbs.appendChild(_createThumbWrap(img, "shop", galLabel, thumbs));
         });
         gallery.appendChild(thumbs);
 
         gallery.appendChild(
-            _createUploadBtn("Add Image", `/api/shop/${item.id}/images`)
+            _createUploadBtn("Add Image", `/api/shop/${item.id}/images`, (imgData) => {
+                // Targeted update: add new thumbnail without re-rendering
+                thumbs.appendChild(_createThumbWrap(imgData, "shop", galLabel, thumbs));
+                _updateImageCount(galLabel, thumbs);
+            })
         );
         wrap.appendChild(gallery);
 
@@ -322,7 +361,7 @@ const Admin = (() => {
         delBtn.textContent = "Remove Item";
         delBtn.addEventListener("click", async () => {
             await apiFetch(`/api/shop/${item.id}`, { method: "DELETE" });
-            renderDashboard();
+            wrap.remove();
         });
         wrap.appendChild(delBtn);
 
@@ -356,28 +395,16 @@ const Admin = (() => {
         const thumbs = document.createElement("div");
         thumbs.className = "admin-thumbs";
         images.forEach(img => {
-            const thumbWrap = document.createElement("div");
-            thumbWrap.className = "admin-thumb-wrap";
-            const thumb = document.createElement("img");
-            thumb.className = "admin-img-preview";
-            thumb.src = img.image_path;
-            thumb.alt = "Image";
-            const removeBtn = document.createElement("button");
-            removeBtn.className   = "admin-btn admin-btn-thumb-remove";
-            removeBtn.textContent = "\u00D7";
-            removeBtn.title       = "Remove image";
-            removeBtn.addEventListener("click", async () => {
-                await apiFetch(`/api/portfolio/images/${img.id}`, { method: "DELETE" });
-                renderDashboard();
-            });
-            thumbWrap.appendChild(thumb);
-            thumbWrap.appendChild(removeBtn);
-            thumbs.appendChild(thumbWrap);
+            thumbs.appendChild(_createThumbWrap(img, "portfolio", galLabel, thumbs));
         });
         gallery.appendChild(thumbs);
 
         gallery.appendChild(
-            _createUploadBtn("Add Image", `/api/portfolio/${item.id}/images`)
+            _createUploadBtn("Add Image", `/api/portfolio/${item.id}/images`, (imgData) => {
+                // Targeted update: add new thumbnail without re-rendering
+                thumbs.appendChild(_createThumbWrap(imgData, "portfolio", galLabel, thumbs));
+                _updateImageCount(galLabel, thumbs);
+            })
         );
         wrap.appendChild(gallery);
 
@@ -387,9 +414,36 @@ const Admin = (() => {
         delBtn.textContent = "Remove Item";
         delBtn.addEventListener("click", async () => {
             await apiFetch(`/api/portfolio/${item.id}`, { method: "DELETE" });
-            renderDashboard();
+            wrap.remove();
         });
         wrap.appendChild(delBtn);
+
+        // Add to Shop button — creates a duplicate shop listing from this portfolio piece
+        const shopBtn = document.createElement("button");
+        shopBtn.className   = "admin-btn admin-btn-to-shop";
+        shopBtn.textContent = "Add to Shop";
+        shopBtn.addEventListener("click", async () => {
+            shopBtn.disabled    = true;
+            shopBtn.textContent = "Adding\u2026";
+            try {
+                const newShopItem = await apiFetch(`/api/portfolio/${item.id}/to-shop`, { method: "POST" });
+                const shopSection = [...document.querySelectorAll(".admin-section")].find(
+                    s => s.querySelector("h2") && s.querySelector("h2").textContent === "Shop Items"
+                );
+                if (shopSection) {
+                    const addBtn = shopSection.querySelector(".admin-btn-add");
+                    if (addBtn) shopSection.insertBefore(_shopItemEditor(newShopItem), addBtn);
+                    else shopSection.appendChild(_shopItemEditor(newShopItem));
+                }
+                shopBtn.disabled    = false;
+                shopBtn.textContent = "Add to Shop";
+            } catch (e) {
+                alert("Could not add to shop: " + e.message);
+                shopBtn.disabled    = false;
+                shopBtn.textContent = "Add to Shop";
+            }
+        });
+        wrap.appendChild(shopBtn);
 
         return wrap;
     }
@@ -402,7 +456,7 @@ const Admin = (() => {
             const content = _collectContentFields(container);
             await apiFetch("/api/content", { method: "PUT", body: content });
 
-            // 2. Shop items (name / price)
+            // 2. Shop items (name / price / quantity)
             const shopFields = _collectShopFields(container);
             for (const [id, fields] of Object.entries(shopFields)) {
                 await apiFetch(`/api/shop/${id}`, { method: "PUT", body: fields });
