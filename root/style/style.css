@@ -18,6 +18,12 @@ html.ready body {
 body {
     font-family: Georgia, 'Times New Roman', serif;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.site-footer {
+    margin-top: auto;
 }
 
 /* ===== Navbar ===== */
@@ -79,7 +85,6 @@ body {
     color: rgba(255, 255, 255, 0.6);
     text-align: center;
     padding: 30px 20px 20px;
-    margin-top: 60px;
     font-size: 0.95rem;
 }
 
