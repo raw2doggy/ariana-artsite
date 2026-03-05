@@ -19,6 +19,17 @@
     transform: translateY(-50%);
 }
 
+.admin-btn-images {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #2980b9;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
 .admin-container {
     width: 700px;
     max-width: 95%;
@@ -311,6 +322,14 @@
         transform: none;
         margin: 10px auto;
         display: block;
+    }
+
+    .admin-btn-images {
+        position: static;
+        transform: none;
+        margin: 10px auto;
+        display: block;
+        text-align: center;
     }
 
     .admin-header {

@@ -65,6 +65,7 @@ app.use("/api/auth",      require("./routes/auth"));
 app.use("/api/content",   require("./routes/content"));
 app.use("/api/shop",      require("./routes/shop"));
 app.use("/api/portfolio", require("./routes/portfolio"));
+app.use("/api/images",    require("./routes/images"));
 app.use("/api/checkout",  checkoutRoutes);
 
 // ── Serve static site files (HTML, CSS, JS, img) ──────────────
