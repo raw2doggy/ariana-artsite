@@ -66,12 +66,13 @@ router.get("/", async (req, res) => {
 // ── POST / ──────────────────────────────────────────────────
 router.post("/", requireAdmin, async (req, res) => {
     try {
-        const { name, price_cents, quantity } = req.body;
+        const { name, price_cents, quantity, item_type } = req.body;
         const pool = getPool();
+        const type = (item_type === "digital") ? "digital" : "physical";
 
         const [result] = await pool.query(
-            "INSERT INTO shop_items (name, price_cents, quantity) VALUES (?, ?, ?)",
-            [name || "New Item", parseInt(price_cents) || 0, parseInt(quantity) || 0]
+            "INSERT INTO shop_items (name, price_cents, quantity, item_type) VALUES (?, ?, ?, ?)",
+            [name || "New Item", parseInt(price_cents) || 0, parseInt(quantity) || 0, type]
         );
 
         const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [result.insertId]);
@@ -87,12 +88,13 @@ router.post("/", requireAdmin, async (req, res) => {
 // ── PUT /:id ────────────────────────────────────────────────
 router.put("/:id", requireAdmin, async (req, res) => {
     try {
-        const { name, price_cents, quantity } = req.body;
+        const { name, price_cents, quantity, item_type } = req.body;
         const pool = getPool();
+        const type = (item_type === "digital") ? "digital" : "physical";
 
         await pool.query(
-            "UPDATE shop_items SET name = ?, price_cents = ?, quantity = ? WHERE id = ?",
-            [name || "Untitled", parseInt(price_cents) || 0, parseInt(quantity) || 0, req.params.id]
+            "UPDATE shop_items SET name = ?, price_cents = ?, quantity = ?, item_type = ? WHERE id = ?",
+            [name || "Untitled", parseInt(price_cents) || 0, parseInt(quantity) || 0, type, req.params.id]
         );
 
         const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [req.params.id]);

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Ariana's Art Site</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="../style/admin.css">
+    <link rel="stylesheet" href="../style/orders-admin.css">
+    <noscript><style>html{visibility:visible!important}</style></noscript>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="shop.html">Shop</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+
+    <div class="admin-header">
+        <h1 class="page-title">Completed Orders</h1>
+        <a href="admin.html" class="admin-btn admin-btn-back" id="back-btn">&larr; Back to Dashboard</a>
+    </div>
+    <hr class="page-divider">
+
+    <div class="admin-container orders-admin-container">
+        <div id="orders-list">
+            <p class="orders-loading">Loading orders&hellip;</p>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="shop.html">Shop</a>
+            <a href="about.html">About</a>
+            <a href="support.html">Support</a>
+        </div>
+        <a href="login.html" class="footer-admin active">Admin</a>
+        <p class="footer-copy">&copy; 2025 Ariana's Art Site. All rights reserved.</p>
+    </footer>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        (async () => {
+            "use strict";
+
+            if (!Auth.isLoggedIn()) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            const valid = await Auth.checkSession();
+            if (!valid) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            document.documentElement.classList.add('ready');
+            loadOrders();
+        })();
+
+        async function loadOrders() {
+            const container = document.getElementById("orders-list");
+            try {
+                const res = await fetch("/api/orders");
+                if (!res.ok) throw new Error("Unauthorized");
+                const orders = await res.json();
+
+                if (orders.length === 0) {
+                    container.innerHTML = '<p class="orders-empty">No orders yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = orders.map(order => `
+                    <div class="order-card" data-id="${order.id}">
+                        <div class="order-card-header">
+                            <div class="order-card-header-left">
+                                <span class="order-card-id">Order #${order.id}</span>
+                                ${order.customer_name ? `<span class="order-card-name">${escapeHtml(order.customer_name)}</span>` : ''}
+                                ${order.customer_email ? `<span class="order-card-email">${escapeHtml(order.customer_email)}</span>` : ''}
+                            </div>
+                            <span class="order-card-date">${formatDate(order.created_at)}</span>
+                        </div>
+                        ${order.shipping_address ? `<div class="order-card-shipping"><strong>Shipping:</strong> ${escapeHtml(order.shipping_address)}</div>` : ''}
+                        <table class="order-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Price</th>
+                                    <th>Qty</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(item => `
+                                    <tr>
+                                        <td>${escapeHtml(item.item_name)}</td>
+                                        <td>$${(item.price_cents / 100).toFixed(2)}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>$${((item.price_cents * item.quantity) / 100).toFixed(2)}</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                        <div class="order-card-footer">
+                            <span class="order-card-total">Total: $${(order.total_cents / 100).toFixed(2)}</span>
+                            <button class="admin-btn admin-btn-delete" onclick="deleteOrder(${order.id})">Delete</button>
+                        </div>
+                    </div>
+                `).join("");
+            } catch (err) {
+                container.innerHTML = '<p class="orders-empty">Failed to load orders.</p>';
+                console.error(err);
+            }
+        }
+
+        async function deleteOrder(id) {
+            if (!confirm("Are you sure you want to delete this order?")) return;
+            try {
+                const res = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+                if (res.ok) {
+                    const card = document.querySelector(`.order-card[data-id="${id}"]`);
+                    if (card) card.remove();
+                    const container = document.getElementById("orders-list");
+                    if (!container.querySelector(".order-card")) {
+                        container.innerHTML = '<p class="orders-empty">No orders yet.</p>';
+                    }
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("en-US", {
+                year: "numeric", month: "short", day: "numeric",
+                hour: "2-digit", minute: "2-digit"
+            });
+        }
+    </script>
+</body>
+</html>

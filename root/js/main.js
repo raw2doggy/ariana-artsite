@@ -43,6 +43,59 @@ const SiteContent = (() => {
         return images.map(img => (typeof img === "string" ? img : img.image_path));
     }
 
+    // ── Cart State (persisted in localStorage) ────────────────
+    let _cart = [];
+    let _cartDirty = false;
+
+    function _loadCart() {
+        try {
+            const stored = localStorage.getItem("artsite_cart");
+            _cart = stored ? JSON.parse(stored) : [];
+        } catch (_) { _cart = []; }
+    }
+
+    function _saveCart() {
+        localStorage.setItem("artsite_cart", JSON.stringify(_cart));
+        _updateFloatingCart();
+    }
+
+    // ── Floating Cart Icon (visible on every page when cart has items) ──
+
+    function _createFloatingCart() {
+        // Don't show floating cart on the cart page itself
+        if (location.pathname.toLowerCase().includes("cart")) return;
+
+        // Determine correct path to cart.html based on current page
+        const onPagesLevel = location.pathname.toLowerCase().includes("/pages/");
+        const cartUrl = onPagesLevel ? "cart.html" : "pages/cart.html";
+
+        const btn = document.createElement("a");
+        btn.href = cartUrl;
+        btn.className = "floating-cart-btn";
+        btn.id = "floating-cart-btn";
+        btn.setAttribute("aria-label", "View cart");
+        btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.17 14.75l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 20 4H5.21l-.94-2H1v2h2l3.6 7.59-1.35 2.44C4.52 15.37 5.48 17 7 17h12v-2H7.42c-.14 0-.25-.11-.25-.25z"/>
+            </svg>
+            <span class="floating-cart-badge" id="floating-cart-badge">0</span>`;
+        document.body.appendChild(btn);
+    }
+
+    function _updateFloatingCart() {
+        const btn   = document.getElementById("floating-cart-btn");
+        const badge = document.getElementById("floating-cart-badge");
+        if (!btn || !badge) return;
+
+        const count = _cart.reduce((sum, ci) => sum + ci.quantity, 0);
+        if (count > 0) {
+            btn.style.display = "";
+            badge.textContent = count;
+        } else {
+            btn.style.display = "none";
+        }
+    }
+
     // ── Page Renderers ──────────────────────────────────────
 
     function renderIndex() {
@@ -71,13 +124,17 @@ const SiteContent = (() => {
                 ${_slideshowHTML(srcs, item.name)}
                 <div class="preview-info">
                     <span>${formatPrice(item.price_cents)} — ${_esc(item.name)}</span>
-                    <button class="buy-btn" data-item-id="${item.id}">Buy Now</button>
+                    <button class="add-cart-btn" data-item-id="${item.id}"
+                            data-item-name="${_esc(item.name)}"
+                            data-item-price="${item.price_cents}"
+                            data-item-max="${item.quantity}"
+                            data-item-type="${item.item_type || 'physical'}">Add to Cart</button>
                 </div>`;
             container.appendChild(card);
         });
 
         _initSlideshows(container);
-        _initBuyButtons(container);
+        _initAddToCartButtons(container);
     }
 
     function renderAbout() {
@@ -137,43 +194,289 @@ const SiteContent = (() => {
                 ${_slideshowHTML(srcs, item.name)}
                 <div class="shop-info-bar">
                     <span>${formatPrice(item.price_cents)} — ${_esc(item.name)}</span>
-                    <button class="buy-btn" data-item-id="${item.id}">Buy Now</button>
+                    <button class="add-cart-btn" data-item-id="${item.id}"
+                            data-item-name="${_esc(item.name)}"
+                            data-item-price="${item.price_cents}"
+                            data-item-max="${item.quantity}"
+                            data-item-type="${item.item_type || 'physical'}">Add to Cart</button>
                 </div>`;
 
             container.appendChild(row);
         });
 
         _initSlideshows(container);
-        _initBuyButtons(container);
+        _initAddToCartButtons(container);
     }
 
-    // ── Buy-Button Handler ──────────────────────────────────
+    // ── Add-to-Cart Handler ─────────────────────────────────
 
-    function _initBuyButtons(root) {
-        root.querySelectorAll(".buy-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                btn.disabled    = true;
-                btn.textContent = "Redirecting\u2026";
-                try {
-                    const res = await fetch("/api/checkout", {
-                        method:  "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body:    JSON.stringify({ itemId: parseInt(btn.dataset.itemId, 10) })
-                    });
-                    const result = await res.json();
-                    if (result.url) {
-                        window.location.href = result.url;
+    function _initAddToCartButtons(root) {
+        root.querySelectorAll(".add-cart-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const itemId     = parseInt(btn.dataset.itemId, 10);
+                const name       = btn.dataset.itemName;
+                const price_cents = parseInt(btn.dataset.itemPrice, 10);
+                const maxQty     = parseInt(btn.dataset.itemMax, 10);
+                const itemType   = btn.dataset.itemType || "physical";
+
+                const existing = _cart.find(c => c.itemId === itemId);
+                if (existing) {
+                    if (existing.quantity < existing.maxQuantity) {
+                        existing.quantity++;
                     } else {
-                        alert(result.error || "Checkout failed.");
-                        btn.disabled    = false;
-                        btn.textContent = "Buy Now";
+                        alert(`Only ${existing.maxQuantity} of "${name}" available.`);
+                        return;
                     }
-                } catch (_) {
-                    alert("Checkout failed. Please try again.");
-                    btn.disabled    = false;
-                    btn.textContent = "Buy Now";
+                } else {
+                    _cart.push({ itemId, name, price_cents, quantity: 1, maxQuantity: maxQty, itemType });
                 }
+                _saveCart();
             });
+        });
+    }
+
+    // ── Cart Page Renderer (cart.html) ─────────────────────────
+
+    function renderCartPage() {
+        _renderCartItems();
+        _initCartControls();
+    }
+
+    function _renderCartItems() {
+        const container = document.getElementById("cart-items");
+        const totalEl   = document.getElementById("cart-total");
+        const warning   = document.getElementById("cart-warning");
+        const emptyMsg  = document.getElementById("cart-empty-msg");
+        const footer    = document.getElementById("cart-footer");
+        if (!container) return;
+
+        if (!_cart.length) {
+            container.innerHTML = "";
+            if (emptyMsg) emptyMsg.style.display = "";
+            if (footer)   footer.style.display = "none";
+            if (warning)  warning.style.display = "none";
+            return;
+        }
+        if (emptyMsg) emptyMsg.style.display = "none";
+        if (footer)   footer.style.display = "";
+
+        container.innerHTML = "";
+        let total = 0;
+
+        _cart.forEach((ci, idx) => {
+            const lineTotal = ci.price_cents * ci.quantity;
+            total += lineTotal;
+
+            const row = document.createElement("div");
+            row.className = "cart-row";
+            row.innerHTML = `
+                <span class="cart-item-name">${_esc(ci.name)}</span>
+                <div class="cart-qty-controls">
+                    <button class="cart-qty-btn" data-idx="${idx}" data-dir="-1">−</button>
+                    <span class="cart-qty-value">${ci.quantity}</span>
+                    <button class="cart-qty-btn" data-idx="${idx}" data-dir="1">+</button>
+                </div>
+                <span class="cart-item-price">${formatPrice(lineTotal)}</span>
+                <button class="cart-remove-btn" data-idx="${idx}">&times;</button>`;
+            container.appendChild(row);
+        });
+
+        if (totalEl) totalEl.textContent = "Total: " + formatPrice(total);
+        if (warning) warning.style.display = _cartDirty ? "" : "none";
+
+        // Wire quantity buttons
+        container.querySelectorAll(".cart-qty-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const idx = parseInt(btn.dataset.idx, 10);
+                const dir = parseInt(btn.dataset.dir, 10);
+                const ci  = _cart[idx];
+                if (!ci) return;
+
+                const newQty = ci.quantity + dir;
+                if (newQty < 1) return;
+                if (newQty > ci.maxQuantity) {
+                    alert(`Only ${ci.maxQuantity} of "${ci.name}" available.`);
+                    return;
+                }
+                ci.quantity = newQty;
+                _cartDirty = true;
+                _saveCart();
+                _renderCartItems();
+            });
+        });
+
+        // Wire remove buttons
+        container.querySelectorAll(".cart-remove-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const idx = parseInt(btn.dataset.idx, 10);
+                _cart.splice(idx, 1);
+                _saveCart();
+                _renderCartItems();
+            });
+        });
+    }
+
+    // ── Cart Controls (Refresh & Checkout) ──────────────────
+
+    function _initCartControls() {
+        const refreshBtn  = document.getElementById("cart-refresh-btn");
+        const checkoutBtn = document.getElementById("cart-checkout-btn");
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", async () => {
+                refreshBtn.disabled    = true;
+                refreshBtn.textContent = "Refreshing…";
+                try {
+                    const res   = await fetch("/api/shop");
+                    const items = await res.json();
+
+                    _cart = _cart.filter(ci => {
+                        const fresh = items.find(i => i.id === ci.itemId);
+                        if (!fresh || fresh.quantity <= 0) return false;
+                        ci.maxQuantity = fresh.quantity;
+                        ci.price_cents = fresh.price_cents;
+                        ci.itemType    = fresh.item_type || "physical";
+                        if (ci.quantity > ci.maxQuantity) ci.quantity = ci.maxQuantity;
+                        return true;
+                    });
+
+                    _cartDirty = false;
+                    _saveCart();
+                    _renderCartItems();
+                } catch (_) {
+                    alert("Failed to refresh cart. Please try again.");
+                }
+                refreshBtn.disabled    = false;
+                refreshBtn.textContent = "Refresh Cart";
+            });
+        }
+
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener("click", () => {
+                if (!_cart.length) return;
+                if (_cartDirty) {
+                    alert("Please press Refresh Cart first to confirm current prices and availability.");
+                    return;
+                }
+                _showCheckoutForm();
+            });
+        }
+    }
+
+    // ── Checkout Info Form ──────────────────────────────────
+
+    function _hasPhysicalItems() {
+        return _cart.some(ci => (ci.itemType || "physical") === "physical");
+    }
+
+    function _showCheckoutForm() {
+        // Remove if already showing
+        const existing = document.getElementById("checkout-info-overlay");
+        if (existing) existing.remove();
+
+        const needsAddress = _hasPhysicalItems();
+
+        const overlay = document.createElement("div");
+        overlay.id = "checkout-info-overlay";
+        overlay.className = "checkout-overlay";
+        overlay.innerHTML = `
+            <div class="checkout-form-card">
+                <button class="checkout-form-close" id="checkout-form-close">&times;</button>
+                <h2 class="checkout-form-title">${needsAddress ? "Shipping Information" : "Contact Information"}</h2>
+                <form id="checkout-info-form">
+                    <div class="checkout-form-field">
+                        <label for="checkout-name">Full Name</label>
+                        <input type="text" id="checkout-name" required placeholder="Your full name" maxlength="200">
+                    </div>
+                    <div class="checkout-form-field">
+                        <label for="checkout-email">Email</label>
+                        <input type="email" id="checkout-email" required placeholder="you@example.com" maxlength="320">
+                    </div>
+                    ${needsAddress ? `
+                    <div class="checkout-form-field">
+                        <label for="checkout-address">Address</label>
+                        <input type="text" id="checkout-address" required placeholder="Street address" maxlength="500">
+                    </div>
+                    <div class="checkout-form-field">
+                        <label for="checkout-address2">Apt / Suite / Unit (optional)</label>
+                        <input type="text" id="checkout-address2" placeholder="Apt 4B" maxlength="100">
+                    </div>
+                    <div class="checkout-form-row">
+                        <div class="checkout-form-field">
+                            <label for="checkout-city">City</label>
+                            <input type="text" id="checkout-city" required maxlength="200">
+                        </div>
+                        <div class="checkout-form-field">
+                            <label for="checkout-state">State</label>
+                            <input type="text" id="checkout-state" required maxlength="100">
+                        </div>
+                        <div class="checkout-form-field">
+                            <label for="checkout-zip">ZIP Code</label>
+                            <input type="text" id="checkout-zip" required maxlength="20">
+                        </div>
+                    </div>
+                    <div class="checkout-form-field">
+                        <label for="checkout-country">Country</label>
+                        <input type="text" id="checkout-country" value="US" required maxlength="100">
+                    </div>
+                    ` : ""}
+                    <button type="submit" class="checkout-form-submit">Proceed to Payment</button>
+                </form>
+            </div>`;
+        document.body.appendChild(overlay);
+
+        // Close button
+        document.getElementById("checkout-form-close").addEventListener("click", () => overlay.remove());
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+
+        // Form submit
+        document.getElementById("checkout-info-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const customerName = document.getElementById("checkout-name").value.trim();
+            const email = document.getElementById("checkout-email").value.trim();
+            let shippingAddress = null;
+
+            if (needsAddress) {
+                const addr  = document.getElementById("checkout-address").value.trim();
+                const addr2 = document.getElementById("checkout-address2").value.trim();
+                const city  = document.getElementById("checkout-city").value.trim();
+                const state = document.getElementById("checkout-state").value.trim();
+                const zip   = document.getElementById("checkout-zip").value.trim();
+                const country = document.getElementById("checkout-country").value.trim();
+                shippingAddress = [addr, addr2, city, state, zip, country].filter(Boolean).join(", ");
+            }
+
+            const submitBtn = e.target.querySelector(".checkout-form-submit");
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Redirecting\u2026";
+
+            try {
+                const payload = {
+                    items: _cart.map(ci => ({ itemId: ci.itemId, quantity: ci.quantity })),
+                    customerName,
+                    email,
+                    shippingAddress
+                };
+                const res = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.url) {
+                    _cart = [];
+                    _saveCart();
+                    window.location.href = result.url;
+                } else {
+                    alert(result.error || "Checkout failed.");
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Proceed to Payment";
+                }
+            } catch (_) {
+                alert("Checkout failed. Please try again.");
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Proceed to Payment";
+            }
         });
     }
 
@@ -252,21 +555,27 @@ const SiteContent = (() => {
 
     // ── Auto-init based on page ─────────────────────────────
     async function init() {
+        // Load cart from localStorage on every page
+        _loadCart();
+        _createFloatingCart();
+        _updateFloatingCart();
+
         try {
             await fetchAll();
         } catch (e) {
             console.error("Failed to load site data:", e);
-            return;
         }
 
-        const path = location.pathname.toLowerCase();
-        if (path.endsWith("index.html") || path.endsWith("/") || path === "") {
+        const p = location.pathname.toLowerCase();
+        if (p.endsWith("index.html") || p.endsWith("/") || p === "") {
             renderIndex();
-        } else if (path.includes("about")) {
+        } else if (p.includes("about")) {
             renderAbout();
-        } else if (path.includes("portfolio")) {
+        } else if (p.includes("portfolio")) {
             renderPortfolio();
-        } else if (path.includes("shop")) {
+        } else if (p.includes("cart")) {
+            renderCartPage();
+        } else if (p.includes("shop")) {
             renderShop();
         }
     }

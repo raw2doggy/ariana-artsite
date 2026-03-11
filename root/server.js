@@ -67,6 +67,8 @@ app.use("/api/shop",      require("./routes/shop"));
 app.use("/api/portfolio", require("./routes/portfolio"));
 app.use("/api/images",    require("./routes/images"));
 app.use("/api/checkout",  checkoutRoutes);
+app.use("/api/support",   require("./routes/support"));
+app.use("/api/orders",    require("./routes/orders"));
 
 // ── Serve static site files (HTML, CSS, JS, img) ──────────────
 app.use(express.static(__dirname, {

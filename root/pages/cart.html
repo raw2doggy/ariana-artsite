@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop - Ariana's Art Site</title>
+    <title>Cart - Ariana's Art Site</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../style/style.css">
-    <link rel="stylesheet" href="../style/shop.css">
     <link rel="stylesheet" href="../style/cart.css">
+    <link rel="stylesheet" href="../style/checkout-form.css">
     <script>document.documentElement.classList.add('ready');</script>
     <noscript><style>html{visibility:visible!important}</style></noscript>
 </head>
@@ -18,16 +18,25 @@
         <div class="nav-links">
             <a href="../index.html">Home</a>
             <a href="portfolio.html">Portfolio</a>
-            <a href="shop.html" class="active">Shop</a>
+            <a href="shop.html">Shop</a>
             <a href="about.html">About</a>
         </div>
     </nav>
 
-    <h1 class="page-title">Shop</h1>
+    <h1 class="page-title">Your Cart</h1>
     <hr class="page-divider">
 
-    <div id="shop-items">
-        <!-- Dynamically populated by main.js -->
+    <div id="cart-page-content">
+        <p id="cart-empty-msg" class="cart-empty-msg">Your cart is empty.</p>
+        <p id="cart-warning" class="cart-warning" style="display:none;">
+            Press the Refresh button for changes to take effect.
+        </p>
+        <div id="cart-items"></div>
+        <div id="cart-footer" class="cart-footer" style="display:none;">
+            <button id="cart-refresh-btn" class="cart-btn cart-refresh-btn">Refresh Cart</button>
+            <span id="cart-total" class="cart-total"></span>
+            <button id="cart-checkout-btn" class="cart-btn cart-checkout-btn">Checkout</button>
+        </div>
     </div>
 
     <footer class="site-footer">

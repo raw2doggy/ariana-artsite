@@ -53,36 +53,81 @@ router.post("/", async (req, res) => {
         });
     }
 
-    const stripe     = require("stripe")(stripeKey);
-    const { itemId } = req.body;
+    const stripe = require("stripe")(stripeKey);
 
-    if (!itemId) {
-        return res.status(400).json({ error: "Item ID required." });
+    // Support both single itemId (legacy) and items array (cart)
+    let cartItems = [];
+    if (req.body.items && Array.isArray(req.body.items)) {
+        cartItems = req.body.items.map(i => ({
+            itemId:   parseInt(i.itemId, 10),
+            quantity: parseInt(i.quantity, 10) || 1
+        }));
+    } else if (req.body.itemId) {
+        cartItems = [{ itemId: parseInt(req.body.itemId, 10), quantity: 1 }];
+    }
+
+    const customerEmail    = req.body.email || null;
+    const customerName     = req.body.customerName || null;
+    const shippingAddress  = req.body.shippingAddress || null;
+
+    if (!cartItems.length) {
+        return res.status(400).json({ error: "No items provided." });
+    }
+
+    // Server-side validation
+    if (!customerName || typeof customerName !== "string" || customerName.trim().length === 0 || customerName.length > 200) {
+        return res.status(400).json({ error: "A valid name is required." });
+    }
+    if (!customerEmail || typeof customerEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+        return res.status(400).json({ error: "A valid email is required." });
+    }
+    if (shippingAddress && (typeof shippingAddress !== "string" || shippingAddress.length > 1000)) {
+        return res.status(400).json({ error: "Shipping address is too long." });
     }
 
     try {
-        // ── Look up the item ────────────────────────────────
         const pool = getPool();
-        const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [itemId]);
-        if (!rows.length) return res.status(404).json({ error: "Item not found." });
+        const line_items = [];
+        const metaItems  = [];
 
-        const item = rows[0];
-        if (item.price_cents <= 0) {
-            return res.status(400).json({ error: "Item has no price set." });
-        }
-        if (item.quantity <= 0) {
-            return res.status(400).json({ error: "Item is out of stock." });
-        }
+        for (const ci of cartItems) {
+            const [rows] = await pool.query("SELECT * FROM shop_items WHERE id = ?", [ci.itemId]);
+            if (!rows.length) return res.status(404).json({ error: `Item ${ci.itemId} not found.` });
 
-        // ── Optionally attach the first product image ───────
-        const [imgRows] = await pool.query(
-            "SELECT image_path FROM shop_item_images WHERE shop_item_id = ? ORDER BY sort_order LIMIT 1",
-            [itemId]
-        );
+            const item = rows[0];
+            if (item.price_cents <= 0) {
+                return res.status(400).json({ error: `"${item.name}" has no price set.` });
+            }
+            if (item.quantity <= 0) {
+                return res.status(400).json({ error: `"${item.name}" is out of stock.` });
+            }
+            if (ci.quantity > item.quantity) {
+                return res.status(400).json({ error: `Only ${item.quantity} of "${item.name}" available.` });
+            }
 
-        const productImages = [];
-        if (imgRows.length && process.env.SITE_URL) {
-            productImages.push(process.env.SITE_URL + imgRows[0].image_path);
+            // Optionally attach the first product image
+            const [imgRows] = await pool.query(
+                "SELECT image_path FROM shop_item_images WHERE shop_item_id = ? ORDER BY sort_order LIMIT 1",
+                [ci.itemId]
+            );
+            const productImages = [];
+            if (imgRows.length && process.env.SITE_URL) {
+                productImages.push(process.env.SITE_URL + imgRows[0].image_path);
+            }
+
+            line_items.push({
+                price_data: {
+                    currency: "usd",
+                    product_data: {
+                        name:   item.name,
+                        images: productImages
+                    },
+                    unit_amount: item.price_cents
+                },
+                quantity: ci.quantity
+            });
+
+            metaItems.push({ id: ci.itemId, qty: ci.quantity });
         }
 
         // ── Create Stripe Checkout Session ───────────────────
@@ -90,21 +135,14 @@ router.post("/", async (req, res) => {
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
-            line_items: [
-                {
-                    price_data: {
-                        currency: "usd",
-                        product_data: {
-                            name:   item.name,
-                            images: productImages
-                        },
-                        unit_amount: item.price_cents
-                    },
-                    quantity: 1
-                }
-            ],
+            line_items,
             mode: "payment",
-            metadata: { shop_item_id: String(itemId) },
+            metadata: {
+                cart_items: JSON.stringify(metaItems),
+                customer_name: customerName ? customerName.trim() : "",
+                shipping_address: shippingAddress || ""
+            },
+            ...(customerEmail ? { customer_email: customerEmail } : {}),
             success_url: `${siteUrl}/pages/checkout-success.html?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url:  `${siteUrl}/pages/shop.html`
         });
@@ -128,21 +166,35 @@ router.get("/confirm", async (req, res) => {
     if (!sessionId) return res.status(400).json({ error: "Missing session_id." });
 
     try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const session = await stripe.checkout.sessions.retrieve(sessionId, {
+            expand: ["customer_details"]
+        });
 
         if (session.payment_status !== "paid") {
             return res.json({ confirmed: false, reason: "Not paid." });
         }
 
         const itemId = session.metadata && session.metadata.shop_item_id;
-        if (!itemId) {
+        const cartItemsJson = session.metadata && session.metadata.cart_items;
+
+        // Build list of items to decrement
+        let itemsToDecrement = [];
+        if (cartItemsJson) {
+            try {
+                itemsToDecrement = JSON.parse(cartItemsJson);
+            } catch (_) {}
+        } else if (itemId) {
+            // Legacy single-item fallback
+            itemsToDecrement = [{ id: parseInt(itemId, 10), qty: 1 }];
+        }
+
+        if (!itemsToDecrement.length) {
             return res.json({ confirmed: true, decremented: false });
         }
 
         const pool = getPool();
 
         // Prevent double-decrement: check if this session was already processed
-        // We use a simple table to track confirmed session IDs
         try {
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS processed_sessions (
@@ -161,20 +213,51 @@ router.get("/confirm", async (req, res) => {
             return res.json({ confirmed: true, decremented: false, reason: "Already processed." });
         }
 
-        // Mark as processed and decrement
+        // Mark as processed and decrement each item
         await pool.query("INSERT INTO processed_sessions (session_id) VALUES (?)", [sessionId]);
-        await pool.query(
-            "UPDATE shop_items SET quantity = GREATEST(quantity - 1, 0) WHERE id = ?",
-            [itemId]
+
+        // Save the order to the database
+        let totalCents = 0;
+        const orderItemsData = [];
+        for (const ci of itemsToDecrement) {
+            const [itemRows] = await pool.query("SELECT name, price_cents FROM shop_items WHERE id = ?", [ci.id]);
+            if (itemRows.length) {
+                const item = itemRows[0];
+                totalCents += item.price_cents * ci.qty;
+                orderItemsData.push({ name: item.name, price_cents: item.price_cents, qty: ci.qty });
+            }
+        }
+
+        const customerEmail = (session.customer_details && session.customer_details.email)
+            || session.customer_email || null;
+        const customerName = (session.metadata && session.metadata.customer_name) || null;
+        const shippingAddr = (session.metadata && session.metadata.shipping_address) || null;
+
+        const [orderResult] = await pool.query(
+            "INSERT INTO orders (stripe_session, customer_name, customer_email, shipping_address, total_cents) VALUES (?, ?, ?, ?, ?)",
+            [sessionId, customerName, customerEmail, shippingAddr, totalCents]
         );
+        const orderId = orderResult.insertId;
+        for (const oi of orderItemsData) {
+            await pool.query(
+                "INSERT INTO order_items (order_id, item_name, price_cents, quantity) VALUES (?, ?, ?, ?)",
+                [orderId, oi.name, oi.price_cents, oi.qty]
+            );
+        }
 
-        console.log(`\u2714 Confirmed & decremented quantity for shop item ${itemId} (session ${sessionId})`);
+        for (const ci of itemsToDecrement) {
+            await pool.query(
+                "UPDATE shop_items SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?",
+                [ci.qty, ci.id]
+            );
+            console.log(`✔ Confirmed & decremented quantity by ${ci.qty} for shop item ${ci.id} (session ${sessionId})`);
 
-        // Auto-move to portfolio if quantity reached 0
-        try {
-            await moveToPortfolioIfEmpty(pool, itemId);
-        } catch (err) {
-            console.error("Auto-move to portfolio failed:", err.message);
+            // Auto-move to portfolio if quantity reached 0
+            try {
+                await moveToPortfolioIfEmpty(pool, ci.id);
+            } catch (err) {
+                console.error("Auto-move to portfolio failed:", err.message);
+            }
         }
 
         res.json({ confirmed: true, decremented: true });
@@ -209,18 +292,57 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     if (event.type === "checkout.session.completed") {
         const session = event.data.object;
         const itemId = session.metadata && session.metadata.shop_item_id;
+        const cartItemsJson = session.metadata && session.metadata.cart_items;
 
-        if (itemId) {
+        let itemsToDecrement = [];
+        if (cartItemsJson) {
+            try { itemsToDecrement = JSON.parse(cartItemsJson); } catch (_) {}
+        } else if (itemId) {
+            itemsToDecrement = [{ id: parseInt(itemId, 10), qty: 1 }];
+        }
+
+        if (itemsToDecrement.length) {
             try {
                 const pool = getPool();
-                await pool.query(
-                    "UPDATE shop_items SET quantity = GREATEST(quantity - 1, 0) WHERE id = ?",
-                    [itemId]
-                );
-                console.log(`✔ Decremented quantity for shop item ${itemId}`);
 
-                // Auto-move to portfolio if quantity reached 0
-                await moveToPortfolioIfEmpty(pool, itemId);
+                // Save order to database
+                let totalCents = 0;
+                const orderItemsData = [];
+                for (const ci of itemsToDecrement) {
+                    const [itemRows] = await pool.query("SELECT name, price_cents FROM shop_items WHERE id = ?", [ci.id]);
+                    if (itemRows.length) {
+                        const item = itemRows[0];
+                        totalCents += item.price_cents * ci.qty;
+                        orderItemsData.push({ name: item.name, price_cents: item.price_cents, qty: ci.qty });
+                    }
+                }
+
+                const stripeSessionId = session.id || "";
+                const customerEmail = (session.customer_details && session.customer_details.email)
+                    || session.customer_email || null;
+                const customerName = (session.metadata && session.metadata.customer_name) || null;
+                const shippingAddress = (session.metadata && session.metadata.shipping_address) || null;
+
+                const [orderResult] = await pool.query(
+                    "INSERT INTO orders (stripe_session, customer_name, customer_email, shipping_address, total_cents) VALUES (?, ?, ?, ?, ?)",
+                    [stripeSessionId, customerName, customerEmail, shippingAddress, totalCents]
+                );
+                const orderId = orderResult.insertId;
+                for (const oi of orderItemsData) {
+                    await pool.query(
+                        "INSERT INTO order_items (order_id, item_name, price_cents, quantity) VALUES (?, ?, ?, ?)",
+                        [orderId, oi.name, oi.price_cents, oi.qty]
+                    );
+                }
+
+                for (const ci of itemsToDecrement) {
+                    await pool.query(
+                        "UPDATE shop_items SET quantity = GREATEST(quantity - ?, 0) WHERE id = ?",
+                        [ci.qty, ci.id]
+                    );
+                    console.log(`✔ Decremented quantity by ${ci.qty} for shop item ${ci.id}`);
+                    await moveToPortfolioIfEmpty(pool, ci.id);
+                }
             } catch (err) {
                 console.error("Webhook DB error:", err.message);
             }

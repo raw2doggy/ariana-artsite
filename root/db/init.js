@@ -49,6 +49,7 @@ async function createTables() {
             name        VARCHAR(255) NOT NULL,
             price_cents INT NOT NULL DEFAULT 0,
             quantity    INT NOT NULL DEFAULT 0,
+            item_type   ENUM('physical','digital') NOT NULL DEFAULT 'physical',
             created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -56,6 +57,13 @@ async function createTables() {
     // Migration: add quantity column if it doesn't exist (for existing databases)
     try {
         await p.query(`ALTER TABLE shop_items ADD COLUMN quantity INT NOT NULL DEFAULT 0 AFTER price_cents`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
+
+    // Migration: add item_type column if it doesn't exist
+    try {
+        await p.query(`ALTER TABLE shop_items ADD COLUMN item_type ENUM('physical','digital') NOT NULL DEFAULT 'physical' AFTER quantity`);
     } catch (_) {
         // Column already exists — ignore
     }
@@ -85,6 +93,59 @@ async function createTables() {
             image_path        VARCHAR(500) NOT NULL,
             sort_order        INT DEFAULT 0,
             FOREIGN KEY (portfolio_item_id) REFERENCES portfolio_items(id) ON DELETE CASCADE
+        )
+    `);
+
+    await p.query(`
+        CREATE TABLE IF NOT EXISTS support_messages (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            email      VARCHAR(255) NOT NULL,
+            message    TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await p.query(`
+        CREATE TABLE IF NOT EXISTS orders (
+            id               INT AUTO_INCREMENT PRIMARY KEY,
+            stripe_session   VARCHAR(255) NOT NULL,
+            customer_name    VARCHAR(200) DEFAULT NULL,
+            customer_email   VARCHAR(255) DEFAULT NULL,
+            shipping_address TEXT DEFAULT NULL,
+            total_cents      INT NOT NULL DEFAULT 0,
+            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Migration: add customer_name column if it doesn't exist
+    try {
+        await p.query(`ALTER TABLE orders ADD COLUMN customer_name VARCHAR(200) DEFAULT NULL AFTER stripe_session`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
+
+    // Migration: add customer_email column if it doesn't exist (for existing databases)
+    try {
+        await p.query(`ALTER TABLE orders ADD COLUMN customer_email VARCHAR(255) DEFAULT NULL AFTER customer_name`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
+
+    // Migration: add shipping_address column if it doesn't exist
+    try {
+        await p.query(`ALTER TABLE orders ADD COLUMN shipping_address TEXT DEFAULT NULL AFTER customer_email`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
+
+    await p.query(`
+        CREATE TABLE IF NOT EXISTS order_items (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            order_id    INT NOT NULL,
+            item_name   VARCHAR(255) NOT NULL,
+            price_cents INT NOT NULL DEFAULT 0,
+            quantity    INT NOT NULL DEFAULT 1,
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
         )
     `);
 }

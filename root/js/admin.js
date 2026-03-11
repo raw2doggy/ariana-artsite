@@ -109,13 +109,15 @@ const Admin = (() => {
 
     function _collectShopFields(container) {
         const items = {};
-        container.querySelectorAll("input[data-type='shop']").forEach(el => {
+        container.querySelectorAll("[data-type='shop']").forEach(el => {
             const id = el.dataset.id;
             if (!items[id]) items[id] = {};
             if (el.dataset.prop === "price") {
                 items[id].price_cents = displayToCents(el.value);
             } else if (el.dataset.prop === "quantity") {
                 items[id].quantity = parseInt(el.value) || 0;
+            } else if (el.dataset.prop === "item_type") {
+                items[id].item_type = el.value;
             } else {
                 items[id][el.dataset.prop] = el.value;
             }
@@ -327,8 +329,13 @@ const Admin = (() => {
             <div class="admin-field">
                 <label>Quantity</label>
                 <input type="number" data-type="shop" data-id="${item.id}" data-prop="quantity"
-                       value="${item.quantity || 0}" min="0">
-            </div>`;
+                       value="${item.quantity || 0}" min="0">            </div>
+            <div class="admin-field">
+                <label>Type</label>
+                <select data-type="shop" data-id="${item.id}" data-prop="item_type">
+                    <option value="physical"${(item.item_type || 'physical') === 'physical' ? ' selected' : ''}>Physical</option>
+                    <option value="digital"${item.item_type === 'digital' ? ' selected' : ''}>Digital</option>
+                </select>            </div>`;
         wrap.appendChild(fields);
 
         // Image gallery

@@ -78,7 +78,8 @@
 }
 
 .admin-field input,
-.admin-field textarea {
+.admin-field textarea,
+.admin-field select {
     width: 100%;
     padding: 8px 10px;
     font-size: 0.95rem;
@@ -91,7 +92,8 @@
 }
 
 .admin-field input:focus,
-.admin-field textarea:focus {
+.admin-field textarea:focus,
+.admin-field select:focus {
     outline: none;
     border-color: #c41e3a;
 }
@@ -340,5 +342,66 @@
 
     .admin-header {
         flex-direction: column;
+    }
+
+    .admin-nav-links {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-nav-links .admin-btn {
+        text-align: center;
+    }
+}
+
+/* Admin sub-page navigation links */
+.admin-nav-links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px auto 10px;
+    max-width: 700px;
+}
+
+.admin-btn-support {
+    background-color: #8e44ad;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.admin-btn-support:hover {
+    background-color: #733a8d;
+}
+
+.admin-btn-orders {
+    background-color: #2980b9;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.admin-btn-orders:hover {
+    background-color: #1f6da0;
+}
+
+.admin-btn-back {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #555;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .admin-btn-back {
+        position: static;
+        transform: none;
+        margin: 10px auto;
+        display: block;
+        text-align: center;
     }
 }

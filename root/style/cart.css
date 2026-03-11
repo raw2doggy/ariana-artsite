@@ -1,0 +1,222 @@
+/* ===== Cart Page Styles ===== */
+
+#cart-page-content {
+    max-width: 700px;
+    margin: 0 auto 50px;
+    padding: 0 20px;
+}
+
+.cart-empty-msg {
+    text-align: center;
+    color: rgba(232, 224, 216, 0.5);
+    font-size: 1.1rem;
+    font-weight: 300;
+    margin: 3rem 0;
+}
+
+.cart-warning {
+    text-align: center;
+    color: #e53935;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 12px 0;
+}
+
+/* Cart row */
+.cart-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(196, 30, 58, 0.2);
+    border-radius: 8px;
+    background: #1a1717;
+    margin-bottom: 10px;
+}
+
+.cart-item-name {
+    flex: 1;
+    font-size: 0.95rem;
+    color: #e8e0d8;
+}
+
+.cart-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cart-qty-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(196, 30, 58, 0.5);
+    border-radius: 4px;
+    background: transparent;
+    color: #e8e0d8;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.cart-qty-btn:hover {
+    background: #c41e3a;
+    color: #fff;
+}
+
+.cart-qty-value {
+    min-width: 24px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #e8e0d8;
+}
+
+.cart-item-price {
+    min-width: 70px;
+    text-align: right;
+    font-size: 0.95rem;
+    color: rgba(232, 224, 216, 0.75);
+}
+
+.cart-remove-btn {
+    background: transparent;
+    border: none;
+    color: rgba(232, 224, 216, 0.4);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    transition: color 0.2s;
+}
+
+.cart-remove-btn:hover {
+    color: #e53935;
+}
+
+/* Cart footer */
+.cart-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    gap: 12px;
+}
+
+.cart-total {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e8e0d8;
+    letter-spacing: 1px;
+}
+
+.cart-btn {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border: 1px solid #c41e3a;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+    white-space: nowrap;
+}
+
+.cart-refresh-btn {
+    background: transparent;
+    color: #c41e3a;
+}
+
+.cart-refresh-btn:hover {
+    background: rgba(196, 30, 58, 0.15);
+    color: #e8e0d8;
+}
+
+.cart-checkout-btn {
+    background: #c41e3a;
+    color: #e8e0d8;
+}
+
+.cart-checkout-btn:hover {
+    box-shadow: 0 0 20px rgba(196, 30, 58, 0.4);
+}
+
+.cart-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ===== Floating Cart Button (injected by main.js) ===== */
+.floating-cart-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 9000;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #c41e3a;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(196, 30, 58, 0.45);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.floating-cart-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(196, 30, 58, 0.6);
+}
+
+.floating-cart-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #e8e0d8;
+}
+
+.floating-cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #e8e0d8;
+    color: #0d0d0d;
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+    .cart-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .cart-item-name {
+        width: 100%;
+    }
+
+    .cart-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .floating-cart-btn {
+        bottom: 18px;
+        right: 18px;
+        width: 50px;
+        height: 50px;
+    }
+}

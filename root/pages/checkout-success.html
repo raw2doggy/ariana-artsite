@@ -8,7 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="../style/index.css">
     <link rel="stylesheet" href="../style/shop.css">
+    <link rel="stylesheet" href="../style/cart.css">
     <script>document.documentElement.classList.add('ready');</script>
     <noscript><style>html{visibility:visible!important}</style></noscript>
 </head>
@@ -29,7 +31,7 @@
             Your order has been confirmed. We'll be in touch soon with details
             about your artwork.
         </p>
-        <a href="shop.html" class="shop-link" style="font-size: 0.95rem;">
+        <a href="shop.html" class="shop-link">
             &larr; Continue Shopping
         </a>
     </div>
@@ -40,12 +42,16 @@
             <a href="portfolio.html">Portfolio</a>
             <a href="shop.html">Shop</a>
             <a href="about.html">About</a>
+            <a href="support.html">Support</a>
         </div>
         <a href="login.html" class="footer-admin">Admin</a>
         <p class="footer-copy">&copy; 2025 Ariana's Art Site. All rights reserved.</p>
     </footer>
 
     <script>
+        // Clear the cart after successful purchase
+        localStorage.removeItem("artsite_cart");
+
         // Confirm the purchase and decrement quantity server-side
         (() => {
             const params = new URLSearchParams(window.location.search);

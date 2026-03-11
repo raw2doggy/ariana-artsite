@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Messages - Ariana's Art Site</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="../style/admin.css">
+    <link rel="stylesheet" href="../style/support-admin.css">
+    <noscript><style>html{visibility:visible!important}</style></noscript>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="../index.html">Home</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="shop.html">Shop</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+
+    <div class="admin-header">
+        <h1 class="page-title">Support Messages</h1>
+        <a href="admin.html" class="admin-btn admin-btn-back" id="back-btn">&larr; Back to Dashboard</a>
+    </div>
+    <hr class="page-divider">
+
+    <div class="admin-container support-admin-container">
+        <div id="support-messages">
+            <p class="support-loading">Loading messages&hellip;</p>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="portfolio.html">Portfolio</a>
+            <a href="shop.html">Shop</a>
+            <a href="about.html">About</a>
+            <a href="support.html">Support</a>
+        </div>
+        <a href="login.html" class="footer-admin active">Admin</a>
+        <p class="footer-copy">&copy; 2025 Ariana's Art Site. All rights reserved.</p>
+    </footer>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        (async () => {
+            "use strict";
+
+            if (!Auth.isLoggedIn()) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            const valid = await Auth.checkSession();
+            if (!valid) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            document.documentElement.classList.add('ready');
+            loadMessages();
+        })();
+
+        async function loadMessages() {
+            const container = document.getElementById("support-messages");
+            try {
+                const res = await fetch("/api/support");
+                if (!res.ok) throw new Error("Unauthorized");
+                const messages = await res.json();
+
+                if (messages.length === 0) {
+                    container.innerHTML = '<p class="support-empty">No support messages yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = messages.map(msg => `
+                    <div class="support-card" data-id="${msg.id}">
+                        <div class="support-card-header">
+                            <span class="support-card-email">${escapeHtml(msg.email)}</span>
+                            <span class="support-card-date">${formatDate(msg.created_at)}</span>
+                        </div>
+                        <div class="support-card-body">${escapeHtml(msg.message)}</div>
+                        <div class="support-card-actions">
+                            <button class="admin-btn admin-btn-delete" onclick="deleteMessage(${msg.id})">Delete</button>
+                        </div>
+                    </div>
+                `).join("");
+            } catch (err) {
+                container.innerHTML = '<p class="support-empty">Failed to load messages.</p>';
+                console.error(err);
+            }
+        }
+
+        async function deleteMessage(id) {
+            if (!confirm("Are you sure you want to delete this message?")) return;
+            try {
+                const res = await fetch(`/api/support/${id}`, { method: "DELETE" });
+                if (res.ok) {
+                    const card = document.querySelector(`.support-card[data-id="${id}"]`);
+                    if (card) card.remove();
+                    // Check if empty
+                    const container = document.getElementById("support-messages");
+                    if (!container.querySelector(".support-card")) {
+                        container.innerHTML = '<p class="support-empty">No support messages yet.</p>';
+                    }
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString("en-US", {
+                year: "numeric", month: "short", day: "numeric",
+                hour: "2-digit", minute: "2-digit"
+            });
+        }
+    </script>
+</body>
+</html>

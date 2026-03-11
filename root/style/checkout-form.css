@@ -1,0 +1,139 @@
+/* ===== Checkout Info Form Overlay ===== */
+
+.checkout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.checkout-form-card {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #1a1717;
+    border: 1px solid rgba(196, 30, 58, 0.3);
+    border-radius: 6px;
+    padding: 30px;
+}
+
+.checkout-form-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: rgba(232, 224, 216, 0.5);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.checkout-form-close:hover {
+    color: #e8e0d8;
+}
+
+.checkout-form-title {
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1.3rem;
+    color: #e8e0d8;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.checkout-form-field {
+    margin-bottom: 16px;
+}
+
+.checkout-form-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(232, 224, 216, 0.55);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.checkout-form-field input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 1px solid rgba(232, 224, 216, 0.12);
+    border-radius: 3px;
+    background-color: #0d0d0d;
+    color: #e8e0d8;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.checkout-form-field input:focus {
+    outline: none;
+    border-color: #c41e3a;
+    box-shadow: 0 0 12px rgba(196, 30, 58, 0.15);
+}
+
+.checkout-form-row {
+    display: flex;
+    gap: 12px;
+}
+
+.checkout-form-row .checkout-form-field {
+    flex: 1;
+    min-width: 0;
+}
+
+.checkout-form-submit {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    font-family: 'Cinzel', 'Times New Roman', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    background-color: #c41e3a;
+    color: #e8e0d8;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.checkout-form-submit:hover {
+    background-color: #a01830;
+    box-shadow: 0 0 20px rgba(196, 30, 58, 0.25);
+}
+
+.checkout-form-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 480px) {
+    .checkout-form-card {
+        padding: 20px;
+    }
+
+    .checkout-form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .checkout-form-title {
+        font-size: 1.1rem;
+    }
+}
