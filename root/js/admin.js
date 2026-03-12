@@ -118,6 +118,8 @@ const Admin = (() => {
                 items[id].quantity = parseInt(el.value) || 0;
             } else if (el.dataset.prop === "item_type") {
                 items[id].item_type = el.value;
+            } else if (el.dataset.prop === "description") {
+                items[id].description = el.value;
             } else {
                 items[id][el.dataset.prop] = el.value;
             }
@@ -127,7 +129,7 @@ const Admin = (() => {
 
     function _collectPortfolioFields(container) {
         const items = {};
-        container.querySelectorAll("input[data-type='portfolio']").forEach(el => {
+        container.querySelectorAll("[data-type='portfolio']").forEach(el => {
             const id = el.dataset.id;
             if (!items[id]) items[id] = {};
             items[id][el.dataset.prop] = el.value;
@@ -335,7 +337,11 @@ const Admin = (() => {
                 <select data-type="shop" data-id="${item.id}" data-prop="item_type">
                     <option value="physical"${(item.item_type || 'physical') === 'physical' ? ' selected' : ''}>Physical</option>
                     <option value="digital"${item.item_type === 'digital' ? ' selected' : ''}>Digital</option>
-                </select>            </div>`;
+                </select>            </div>
+            <div class="admin-field">
+                <label>Description</label>
+                <textarea data-type="shop" data-id="${item.id}" data-prop="description" rows="3">${Auth.sanitize(item.description || "")}</textarea>
+            </div>`;
         wrap.appendChild(fields);
 
         // Image gallery
@@ -387,8 +393,10 @@ const Admin = (() => {
             <div class="admin-field">
                 <label>Title</label>
                 <input type="text" data-type="portfolio" data-id="${item.id}" data-prop="title"
-                       value="${Auth.sanitize(item.title || "")}">
-            </div>`;
+                       value="${Auth.sanitize(item.title || "")}">            </div>
+            <div class="admin-field">
+                <label>Description</label>
+                <textarea data-type="portfolio" data-id="${item.id}" data-prop="description" rows="3">${Auth.sanitize(item.description || "")}</textarea>            </div>`;
         wrap.appendChild(fields);
 
         // Image gallery

@@ -62,12 +62,12 @@ router.get("/", async (_req, res) => {
 // ── POST / ──────────────────────────────────────────────────
 router.post("/", requireAdmin, async (req, res) => {
     try {
-        const { title } = req.body;
+        const { title, description } = req.body;
         const pool = getPool();
 
         const [result] = await pool.query(
-            "INSERT INTO portfolio_items (title) VALUES (?)",
-            [title || "New Piece"]
+            "INSERT INTO portfolio_items (title, description) VALUES (?, ?)",
+            [title || "New Piece", description || null]
         );
 
         const [rows] = await pool.query("SELECT * FROM portfolio_items WHERE id = ?", [result.insertId]);
@@ -83,12 +83,12 @@ router.post("/", requireAdmin, async (req, res) => {
 // ── PUT /:id ────────────────────────────────────────────────
 router.put("/:id", requireAdmin, async (req, res) => {
     try {
-        const { title } = req.body;
+        const { title, description } = req.body;
         const pool = getPool();
 
         await pool.query(
-            "UPDATE portfolio_items SET title = ? WHERE id = ?",
-            [title || "Untitled", req.params.id]
+            "UPDATE portfolio_items SET title = ?, description = ? WHERE id = ?",
+            [title || "Untitled", description || null, req.params.id]
         );
 
         const [rows] = await pool.query("SELECT * FROM portfolio_items WHERE id = ?", [req.params.id]);

@@ -115,26 +115,32 @@ const SiteContent = (() => {
         const items  = data.shopItems || [];
         const newest = items.slice(-2).reverse();
 
+        const onPagesLevel = location.pathname.toLowerCase().includes("/pages/");
+        const shopUrl = onPagesLevel ? "shop.html" : "pages/shop.html";
+
         newest.forEach(item => {
             const card = document.createElement("div");
             card.className = "preview-card";
+            card.style.cursor = "pointer";
 
             const srcs = getImageSrcList(item.images);
             card.innerHTML = `
                 ${_slideshowHTML(srcs, item.name)}
                 <div class="preview-info">
-                    <span>${formatPrice(item.price_cents)} — ${_esc(item.name)}</span>
-                    <button class="add-cart-btn" data-item-id="${item.id}"
-                            data-item-name="${_esc(item.name)}"
-                            data-item-price="${item.price_cents}"
-                            data-item-max="${item.quantity}"
-                            data-item-type="${item.item_type || 'physical'}">Add to Cart</button>
+                    <span>${_esc(item.name)}</span>
+                    <span>${formatPrice(item.price_cents)}</span>
+                    <span>Qty: ${item.quantity}</span>
                 </div>`;
+
+            card.addEventListener("click", (e) => {
+                if (e.target.closest(".slide-arrow") || e.target.closest(".dot")) return;
+                window.location.href = shopUrl + "?preview=" + item.id;
+            });
+
             container.appendChild(card);
         });
 
         _initSlideshows(container);
-        _initAddToCartButtons(container);
     }
 
     function renderAbout() {
@@ -167,15 +173,56 @@ const SiteContent = (() => {
         items.forEach(item => {
             const div = document.createElement("div");
             div.className = "gallery-item";
+            div.style.cursor = "pointer";
 
             const srcs = getImageSrcList(item.images);
             div.innerHTML = `
                 ${_slideshowHTML(srcs, item.title)}
                 <p class="gallery-caption">${_esc(item.title)}</p>`;
+
+            div.addEventListener("click", (e) => {
+                if (e.target.closest(".slide-arrow") || e.target.closest(".dot")) return;
+                _openPortfolioPreview(item);
+            });
+
             container.appendChild(div);
         });
 
         _initSlideshows(container);
+    }
+
+    // ── Portfolio Preview Modal ──────────────────────────────
+
+    function _openPortfolioPreview(item) {
+        const existing = document.getElementById("item-preview-overlay");
+        if (existing) existing.remove();
+
+        const srcs = getImageSrcList(item.images);
+
+        const overlay = document.createElement("div");
+        overlay.id = "item-preview-overlay";
+        overlay.className = "preview-overlay";
+
+        overlay.innerHTML = `
+            <div class="preview-modal">
+                <button class="preview-close">&times;</button>
+                <div class="preview-body">
+                    <div class="preview-images">
+                        ${srcs.length ? srcs.map(src =>
+                            `<img src="${src}" alt="${_esc(item.title)}" onerror="this.style.display='none'">`
+                        ).join("") : `<div class="preview-no-image">No images</div>`}
+                    </div>
+                    <div class="preview-details">
+                        <h2 class="preview-title">${_esc(item.title)}</h2>
+                        ${item.description ? `<p class="preview-description">${_esc(item.description)}</p>` : ""}
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+
+        overlay.querySelector(".preview-close").addEventListener("click", () => overlay.remove());
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
     }
 
     function renderShop() {
@@ -188,24 +235,72 @@ const SiteContent = (() => {
         items.forEach(item => {
             const row = document.createElement("div");
             row.className = "shop-item";
+            row.style.cursor = "pointer";
 
             const srcs = getImageSrcList(item.images);
             row.innerHTML = `
                 ${_slideshowHTML(srcs, item.name)}
                 <div class="shop-info-bar">
-                    <span>${formatPrice(item.price_cents)} — ${_esc(item.name)}</span>
-                    <button class="add-cart-btn" data-item-id="${item.id}"
-                            data-item-name="${_esc(item.name)}"
-                            data-item-price="${item.price_cents}"
-                            data-item-max="${item.quantity}"
-                            data-item-type="${item.item_type || 'physical'}">Add to Cart</button>
+                    <span>${_esc(item.name)}</span>
+                    <span>${formatPrice(item.price_cents)}</span>
+                    <span>Qty: ${item.quantity}</span>
                 </div>`;
+
+            row.addEventListener("click", (e) => {
+                // Don't open modal when clicking slideshow arrows/dots
+                if (e.target.closest(".slide-arrow") || e.target.closest(".dot")) return;
+                _openShopPreview(item);
+            });
 
             container.appendChild(row);
         });
 
         _initSlideshows(container);
-        _initAddToCartButtons(container);
+    }
+
+    // ── Shop Preview Modal ──────────────────────────────────
+
+    function _openShopPreview(item) {
+        const existing = document.getElementById("item-preview-overlay");
+        if (existing) existing.remove();
+
+        const srcs = getImageSrcList(item.images);
+
+        const overlay = document.createElement("div");
+        overlay.id = "item-preview-overlay";
+        overlay.className = "preview-overlay";
+
+        overlay.innerHTML = `
+            <div class="preview-modal">
+                <button class="preview-close">&times;</button>
+                <div class="preview-body">
+                    <div class="preview-images">
+                        ${srcs.length ? srcs.map(src =>
+                            `<img src="${src}" alt="${_esc(item.name)}" onerror="this.style.display='none'">`
+                        ).join("") : `<div class="preview-no-image">No images</div>`}
+                    </div>
+                    <div class="preview-details">
+                        <h2 class="preview-title">${_esc(item.name)}</h2>
+                        <p class="preview-price">${formatPrice(item.price_cents)}</p>
+                        <p class="preview-qty">Quantity available: ${item.quantity}</p>
+                        ${item.description ? `<p class="preview-description">${_esc(item.description)}</p>` : ""}
+                        <div class="preview-footer">
+                            <span class="preview-type-badge">${(item.item_type || "physical") === "digital" ? "Digital Purchase" : "Physical Purchase"}</span>
+                            <button class="add-cart-btn" data-item-id="${item.id}"
+                                    data-item-name="${_esc(item.name)}"
+                                    data-item-price="${item.price_cents}"
+                                    data-item-max="${item.quantity}"
+                                    data-item-type="${item.item_type || 'physical'}">Add to Cart</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+
+        overlay.querySelector(".preview-close").addEventListener("click", () => overlay.remove());
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+        _initAddToCartButtons(overlay);
     }
 
     // ── Add-to-Cart Handler ─────────────────────────────────
@@ -577,6 +672,14 @@ const SiteContent = (() => {
             renderCartPage();
         } else if (p.includes("shop")) {
             renderShop();
+            // Auto-open preview if navigated from homepage with ?preview=ID
+            const params = new URLSearchParams(location.search);
+            const previewId = parseInt(params.get("preview"), 10);
+            if (previewId) {
+                const items = load().shopItems || [];
+                const target = items.find(i => i.id === previewId);
+                if (target) _openShopPreview(target);
+            }
         }
     }
 

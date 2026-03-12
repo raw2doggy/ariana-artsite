@@ -68,6 +68,13 @@ async function createTables() {
         // Column already exists — ignore
     }
 
+    // Migration: add description column to shop_items
+    try {
+        await p.query(`ALTER TABLE shop_items ADD COLUMN description TEXT DEFAULT NULL AFTER item_type`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
+
     await p.query(`
         CREATE TABLE IF NOT EXISTS shop_item_images (
             id           INT AUTO_INCREMENT PRIMARY KEY,
@@ -85,6 +92,13 @@ async function createTables() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    // Migration: add description column to portfolio_items
+    try {
+        await p.query(`ALTER TABLE portfolio_items ADD COLUMN description TEXT DEFAULT NULL AFTER title`);
+    } catch (_) {
+        // Column already exists — ignore
+    }
 
     await p.query(`
         CREATE TABLE IF NOT EXISTS portfolio_item_images (
