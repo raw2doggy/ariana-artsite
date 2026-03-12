@@ -1,8 +1,8 @@
 /* ===== Support Page Styles ===== */
 
 .support-form-section {
-    max-width: 520px;
-    margin: 40px auto 60px;
+    max-width: none;
+    margin: 40px 40px 60px;
     padding: 40px 30px;
     border: 1px solid rgba(196, 30, 58, 0.25);
     border-radius: 4px;
